@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contacto – Huaman Ñahui Dany Daniel</title>
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <style>
+    .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem; }
+    @media(max-width:768px){ .contact-grid{grid-template-columns:1fr;} }
+    .contact-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2rem;
+    }
+    .contact-card h3 { font-family: var(--font-display); font-size: 1rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--text-primary); }
+    .form-group { margin-bottom: 1.25rem; }
+    .form-group label { display: block; font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 6px; }
+    .form-group input, .form-group textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group textarea:focus { border-color: var(--accent-cyan); }
+    .form-group textarea { resize: vertical; min-height: 120px; }
+    .info-item { display: flex; align-items: flex-start; gap: 12px; padding: 1rem 0; border-bottom: 1px solid var(--border-color); }
+    .info-item:last-child { border-bottom: none; }
+    .info-icon { width: 36px; height: 36px; border-radius: 8px; background: rgba(0,229,255,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .info-label { font-family: var(--font-mono); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+    .info-val { font-size: 0.9rem; color: var(--text-primary); margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <nav class="navbar">
+    <a href="../index.html" class="nav-brand">
+      <div class="nav-logo">HÑ</div>
+      <div class="nav-title">
+        Huaman Ñahui
+        <span>Arquitectura de Software · 2026</span>
+      </div>
+    </a>
+    <ul class="nav-links">
+      <li><a href="../index.html">Inicio</a></li>
+      <li><a href="unidad1.html">Unidad I</a></li>
+      <li><a href="unidad2.html">Unidad II</a></li>
+      <li><a href="unidad3.html">Unidad III</a></li>
+      <li><a href="unidad4.html">Unidad IV</a></li>
+      <li><a href="contact.html" class="active">Contacto</a></li>
+      <li><a href="login.html" class="nav-btn">Ingresar</a></li>
+    </ul>
+    <div class="hamburger"><span></span><span></span><span></span></div>
+  </nav>
+
+  <section class="page-hero section">
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="../index.html">Inicio</a>
+        <span>›</span>
+        <span>Contacto</span>
+      </div>
+      <div class="page-title-block">
+        <span class="page-unit-tag">// Comunicación</span>
+        <h1 class="page-title">Contáctame</h1>
+      </div>
+
+      <div class="contact-grid">
+        <div class="contact-card reveal">
+          <h3>Enviar Mensaje</h3>
+          <div class="form-group">
+            <label>Nombre</label>
+            <input type="text" placeholder="Tu nombre completo" />
+          </div>
+          <div class="form-group">
+            <label>Correo</label>
+            <input type="email" placeholder="tu@correo.com" />
+          </div>
+          <div class="form-group">
+            <label>Asunto</label>
+            <input type="text" placeholder="Asunto del mensaje" />
+          </div>
+          <div class="form-group">
+            <label>Mensaje</label>
+            <textarea placeholder="Escribe tu mensaje aquí..."></textarea>
+          </div>
+          <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="alert('Mensaje enviado. ¡Gracias!')">
+            Enviar Mensaje
+          </button>
+        </div>
+
+        <div class="contact-card reveal">
+          <h3>Información de Contacto</h3>
+          <div class="info-item">
+            <div class="info-icon">👤</div>
+            <div>
+              <div class="info-label">Estudiante</div>
+              <div class="info-val">Huaman Ñahui Dany Daniel</div>
+            </div>
+          </div>
+          <div class="info-item">
+            <div class="info-icon">🎓</div>
+            <div>
+              <div class="info-label">Carrera</div>
+              <div class="info-val">Ingeniería de Sistemas y Computación</div>
+            </div>
+          </div>
+          <div class="info-item">
+            <div class="info-icon">📘</div>
+            <div>
+              <div class="info-label">Curso</div>
+              <div class="info-val">Arquitectura de Software 2026</div>
+            </div>
+          </div>
+          <div class="info-item">
+            <div class="info-icon">📍</div>
+            <div>
+              <div class="info-label">Ubicación</div>
+              <div class="info-val">Perú</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-name">
+        Huaman Ñahui Dany Daniel
+        <span>Ingeniería de Sistemas y Computación</span>
+      </div>
+      <div class="footer-copy">© 2026 · Todos los derechos reservados</div>
+    </div>
+  </footer>
+
+  <script src="../assets/js/main.js"></script>
+</body>
+</html>

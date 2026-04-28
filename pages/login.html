@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - UPLA</title>
+
+  <link rel="stylesheet" href="../assets/css/style.css">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b0f1a;
+    }
+
+    .login-wrap {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .login-card {
+      background: #111827;
+      padding: 2rem;
+      border-radius: 12px;
+      width: 320px;
+      color: white;
+      text-align: center;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      margin-top: 5px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-login {
+      background: linear-gradient(90deg, #00c6ff, #7f00ff);
+      color: white;
+    }
+
+    .btn-register {
+      background: #1f2937;
+      color: white;
+    }
+
+    a {
+      color: #00c6ff;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="login-wrap">
+  <div class="login-card">
+
+    <h2>Bienvenido</h2>
+    <p>Portafolio - Arquitectura de Software</p>
+
+    <div class="form-group">
+      <label>Correo</label>
+      <input type="email" id="usuario" placeholder="Ingresa tu correo">
+    </div>
+
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="password" placeholder="••••••••">
+    </div>
+
+    <button class="btn-login" onclick="login()">Iniciar Sesión</button>
+    <button class="btn-register" onclick="register()">Crear Cuenta</button>
+
+    <p style="margin-top:15px;">
+      <a href="../index.html">← Volver al inicio</a>
+    </p>
+
+  </div>
+</div>
+
+<!-- ✅ 1. Cargar Supabase -->
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+<!-- ✅ 2. Tu código -->
+<script>
+const SUPABASE_URL = "https://cilnbzovlcarnjkiuylh.supabase.co";
+const SUPABASE_KEY = "sb_publishable_pizASaSdNvJwCiZxwCc9KA_PoYoB69a"; // 👈 pega aquí tu key publishable
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// LOGIN
+async function login() {
+  const email = document.getElementById("usuario").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!email || !password) {
+    alert("Completa el correo y la contraseña.");
+    return;
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    alert("Error: " + error.message);
+    return;
+  }
+
+  alert("Bienvenido 🎉");
+  window.location.href = "../index.html";
+}
+
+// REGISTRO
+async function register() {
+  const email = document.getElementById("usuario").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!email || !password) {
+    alert("Completa el correo y la contraseña.");
+    return;
+  }
+
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+  });
+
+  if (error) {
+    alert("Error: " + error.message);
+    return;
+  }
+
+  alert("Usuario creado correctamente. Ahora inicia sesión.");
+}
+</script>
+
+</body>
+</html>
