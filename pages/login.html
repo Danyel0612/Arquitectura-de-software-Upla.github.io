@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - UPLA</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+    
+</head>
+<style>
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    background:
+      linear-gradient(rgba(5,10,25,0.75), rgba(5,10,25,0.9)),
+      url('../../Imagenes/fondo1.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    color: white;
+  }
+
+  .login-wrap {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .login-card {
+    background: rgba(13, 31, 60, 0.9);
+    padding: 2.5rem;
+    border-radius: 18px;
+    width: 360px;
+    text-align: center;
+    border: 1px solid rgba(0,229,255,0.25);
+    box-shadow: 0 0 35px rgba(0,229,255,0.25);
+    backdrop-filter: blur(15px);
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+    text-align: left;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: bold;
+  }
+
+  .form-group input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,229,255,0.3);
+    background: rgba(255,255,255,0.08);
+    color: white;
+    box-sizing: border-box;
+  }
+
+  .btn-login,
+  .btn-register {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  .btn-login {
+    background: linear-gradient(90deg, #00c6ff, #7f00ff);
+    color: white;
+  }
+
+  .btn-register {
+    background: rgba(255,255,255,0.12);
+    color: white;
+  }
+
+  #estado {
+    margin-top: 12px;
+    color: #fca5a5;
+  }
+
+  a {
+    color: #00e5ff;
+    text-decoration: none;
+  }
+</style>
+
+<body>
+  <div class="login-wrap">
+    <div class="login-card">
+      <h2>Bienvenido</h2>
+      <p>Portafolio - Arquitectura de Software</p>
+
+      <div class="form-group">
+        <label>Correo</label>
+        <input type="email" id="usuario" placeholder="Ingresa tu correo">
+      </div>
+
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" id="password" placeholder="••••••••">
+      </div>
+
+      <button class="btn-login" id="btnLogin">Iniciar Sesión</button>
+      <button class="btn-register" id="btnRegister">Crear Cuenta</button>
+
+      <div id="estado"></div>
+
+      <p style="margin-top:15px;">
+        <a href="../index.html">← Volver al inicio</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+  <script>
+    const SUPABASE_URL = "https://cilnbzovlcarnjkiuylh.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_pizASaSdNvJwCiZxwCc9KA_PoYoB69a";
+
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const estado = document.getElementById("estado");
+
+    document.getElementById("btnLogin").addEventListener("click", async () => {
+      const email = document.getElementById("usuario").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!email || !password) {
+        estado.textContent = "Completa correo y contraseña.";
+        return;
+      }
+
+      estado.textContent = "Iniciando sesión...";
+
+      const { error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        estado.textContent = "Error: " + error.message;
+        return;
+      }
+
+      estado.style.color = "#86efac";
+      estado.textContent = "Login correcto. Redirigiendo...";
+
+      setTimeout(() => {
+        window.location.href = "../index.html";
+      }, 800);
+    });
+
+    document.getElementById("btnRegister").addEventListener("click", async () => {
+      const email = document.getElementById("usuario").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!email || !password) {
+        estado.textContent = "Completa correo y contraseña.";
+        return;
+      }
+
+      estado.textContent = "Creando cuenta...";
+
+      const { error } = await supabaseClient.auth.signUp({
+        email,
+        password
+      });
+
+      if (error) {
+        estado.textContent = "Error: " + error.message;
+        return;
+      }
+
+      estado.style.color = "#86efac";
+      estado.textContent = "Cuenta creada. Ahora inicia sesión.";
+    });
+  </script>
+</body>
+</html>
