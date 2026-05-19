@@ -1237,3 +1237,59 @@ body {
   opacity: 1;
   transform: translateY(0);
 }
+.week-body {
+  display: none;
+}
+
+.week-card.open .week-body,
+.week-card.active .week-body {
+  display: block;
+}
+.week-body {
+  max-height: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  transition: max-height 0.4s ease;
+}
+
+.week-card.open .week-body {
+  max-height: 900px !important;
+  padding: 2rem !important;
+}
+.week-card .week-body {
+  display: none !important;
+}
+
+.week-card.open .week-body {
+  display: block !important;
+}
+.page-nav {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.page-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 40px;
+  width: 100%;
+}
+
+.page-nav a {
+  width: 330px;
+}
+.page-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 40px;
+  width: 100%;
+}
+
+.page-nav a {
+  width: 330px;
+}
