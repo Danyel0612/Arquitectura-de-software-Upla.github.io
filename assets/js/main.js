@@ -233,3 +233,38 @@ controlarOpcionesAdmin();
 supabaseClient.auth.onAuthStateChange(() => {
   controlarOpcionesAdmin();
 });
+document.querySelectorAll(".save-link-btn").forEach(btn => {
+
+  btn.addEventListener("click", async () => {
+
+    const uploadZone = btn.closest(".upload-zone");
+    const input = uploadZone.querySelector(".link-input");
+
+    const link = input.value.trim();
+
+    if (!link) {
+      alert("Ingresa un enlace");
+      return;
+    }
+
+    const fileList = uploadZone.querySelector(".file-list");
+
+    fileList.innerHTML += `
+      <div class="uploaded-file-item">
+        <span class="uploaded-file-name">
+          🔗 ${link}
+        </span>
+
+        <a class="uploaded-file-link"
+           href="${link}"
+           target="_blank">
+           ABRIR
+        </a>
+      </div>
+    `;
+
+    input.value = "";
+
+  });
+
+});
