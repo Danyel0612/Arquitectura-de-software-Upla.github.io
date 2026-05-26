@@ -742,7 +742,9 @@ body::before {
   display: flex; align-items: center; justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
+  
 }
+
 
 .upload-info {
   display: flex; align-items: center; gap: 10px;
@@ -1292,4 +1294,32 @@ body {
 
 .page-nav a {
   width: 330px;
+}
+.link-upload{
+  display:flex;
+  gap:10px;
+  margin-top:15px;
+}
+
+.link-input{
+  flex:1;
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  background:#0f223d;
+  color:white;
+}
+
+.save-link-btn{
+  padding:12px 18px;
+  border:none;
+  border-radius:10px;
+  background:#00d9ff;
+  color:#001b2e;
+  font-weight:bold;
+  cursor:pointer;
+}
+.upload-btn,
+.link-upload {
+  display: none !important;
 }

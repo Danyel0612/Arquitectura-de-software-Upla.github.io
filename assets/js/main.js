@@ -88,7 +88,28 @@ async function cargarArchivos() {
 /* MOSTRAR SUBIR PDF SOLO AL ADMIN */
 async function controlarBotonSubirPDF() {
   const { data } = await supabaseClient.auth.getSession();
-  const user = data.session?.user;
+  const user = data.user;
+
+  const uploadButtons = document.querySelectorAll(".upload-btn");
+  const linkButtons = document.querySelectorAll(".save-link-btn");
+  const linkInputs = document.querySelectorAll(".link-upload");
+
+if (!user) {
+
+  uploadButtons.forEach(btn => {
+    btn.style.display = "none";
+  });
+
+  linkButtons.forEach(btn => {
+    btn.style.display = "none";
+  });
+
+  linkInputs.forEach(input => {
+    input.style.display = "none";
+  });
+
+}
+  
 
   document.querySelectorAll(".upload-btn").forEach(btn => {
     if (user && user.email === ADMIN_EMAIL) {
@@ -150,4 +171,59 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 supabaseClient.auth.onAuthStateChange(() => {
   controlarBotonSubirPDF();
+});
+document.querySelectorAll(".save-link-btn").forEach(btn => {
+
+  btn.addEventListener("click", async () => {
+
+    const uploadZone = btn.closest(".upload-zone");
+    const input = uploadZone.querySelector(".link-input");
+
+    const link = input.value.trim();
+
+    if (!link) {
+      alert("Ingresa un enlace");
+      return;
+    }
+
+    const fileList = uploadZone.querySelector(".file-list");
+
+    fileList.innerHTML += `
+      <div class="uploaded-file-item">
+        <span class="uploaded-file-name">🔗 Enlace guardado</span>
+        <a class="uploaded-file-link" href="${link}" target="_blank">
+          ABRIR
+        </a>
+      </div>
+    `;
+
+    input.value = "";
+  });
+
+});
+async function controlarOpcionesAdmin() {
+  const { data } = await supabaseClient.auth.getSession();
+  const user = data.session?.user;
+
+  document.querySelectorAll(".upload-btn").forEach(btn => {
+    btn.style.setProperty(
+      "display",
+      user ? "inline-block" : "none",
+      "important"
+    );
+  });
+
+  document.querySelectorAll(".link-upload").forEach(box => {
+    box.style.setProperty(
+      "display",
+      user ? "flex" : "none",
+      "important"
+    );
+  });
+}
+
+controlarOpcionesAdmin();
+
+supabaseClient.auth.onAuthStateChange(() => {
+  controlarOpcionesAdmin();
 });
