@@ -123,7 +123,13 @@ if (!user) {
 /* SUBIR ARCHIVOS */
 async function configurarSubidas() {
   document.querySelectorAll(".upload-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
+      const session = await supabaseClient.auth.getSession();
+
+      if (!session.data.session) {
+        alert("Debes iniciar sesión");
+        return;
+      }
       const input = document.createElement("input");
       input.type = "file";
       input.accept = ".pdf,.png,.jpg,.jpeg,.doc,.docx";
