@@ -167,6 +167,96 @@ async function configurarSubidas() {
     });
   });
 }
+/* GUARDAR LINKS */
+async function configurarLinks() {
+
+  const { data: { user } } = await supabaseClient.auth.getUser();
+
+  document.querySelectorAll(".save-link-btn").forEach(btn => {
+
+    if (!user) {
+      btn.style.display = "none";
+      return;
+    }
+
+    btn.addEventListener("click", async () => {
+
+      const card = btn.closest(".week-card");
+
+      const input = card.querySelector(".link-input");
+
+      const url = input.value.trim();
+
+      if (!url) {
+        alert("Ingresa un link");
+        return;
+      }
+
+      const unidad = obtenerUnidadActual();
+      const semana = obtenerSemana(card);
+
+      const ruta = `${unidad}/${semana}`;
+
+      const { error } = await supabaseClient
+        .from("links")
+        .insert([
+          {
+            ruta,
+            titulo: "Link",
+            url
+          }
+        ]);
+
+      if (error) {
+        alert("Error guardando link");
+        console.log(error);
+        return;
+      }
+
+      alert("Link guardado correctamente");
+
+      input.value = "";
+
+      cargarLinks();
+    });
+
+  });
+
+}
+async function cargarLinks() {
+
+  const zonas = document.querySelectorAll(".upload-zone");
+
+  for (const zona of zonas) {
+
+    const ruta = zona.dataset.path;
+
+    const container = zona.querySelector(".links-container");
+
+    if (!container) continue;
+
+    const { data, error } = await supabaseClient
+      .from("links")
+      .select("*")
+      .eq("ruta", ruta);
+
+    if (error) continue;
+
+    container.innerHTML = "";
+
+    data.forEach(link => {
+
+      container.innerHTML += `
+        <a href="${link.url}" target="_blank" class="uploaded-link">
+          🔗 ${link.url}
+        </a>
+      `;
+
+    });
+
+  }
+
+}
 
 /* EJECUTAR */
 document.addEventListener("DOMContentLoaded", async () => {
@@ -268,3 +358,5 @@ document.querySelectorAll(".save-link-btn").forEach(btn => {
   });
 
 });
+configurarLinks();
+cargarLinks();
