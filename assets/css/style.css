@@ -17,9 +17,8 @@
   --glow-violet: 0 0 20px rgba(124,58,237,0.4);
   --font-display: 'Syne', sans-serif;
   --font-mono: 'Space Mono', monospace;
-  --font-body: 'DM Sans', sans-serif;
-  --font-title: 'Orbitron', sans-serif;
   --font-body: 'Poppins', sans-serif;
+  --font-title: 'Orbitron', sans-serif;
 }
 
 /* ===== RESET & BASE ===== */
@@ -703,13 +702,15 @@ body::before {
 }
 .week-card.open .week-toggle { transform: rotate(180deg); color: var(--accent-cyan); }
 
+/* .week-body: single consolidated rule */
 .week-body {
-  max-height: 0;
+  display: none !important;
   overflow: hidden;
-  transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: max-height 0.4s ease;
 }
-
-.week-card.open .week-body { max-height: 500px; }
+.week-card.open .week-body {
+  display: block !important;
+}
 
 .week-body-inner {
   padding: 0 2rem 2rem;
@@ -788,9 +789,7 @@ body::before {
   background: rgba(0,229,255,0.2);
   box-shadow: var(--glow-cyan);
 }
-.upload-btn {
-  display: none !important;
-}
+/* upload-btn visibility controlled by JS */
 
 /* ===== NAV BOTTOM ===== */
 .page-nav {
@@ -905,42 +904,7 @@ footer {
   .page-nav { flex-direction: column; }
   .footer-inner { justify-content: center; text-align: center; flex-direction: column; }
 }
-.file-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-left: auto;
-  margin-right: 16px;
-  min-width: 260px;
-}
-
-.uploaded-file-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  background: rgba(0, 229, 255, 0.06);
-  border: 1px solid rgba(0, 229, 255, 0.2);
-  border-radius: 10px;
-  padding: 8px 10px;
-}
-
-.uploaded-file-name {
-  color: var(--text-primary);
-  font-size: 0.8rem;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.uploaded-file-link {
-  color: var(--accent-cyan);
-  text-decoration: none;
-  font-weight: 700;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-}
+/* ===== FILE LIST (consolidated) ===== */
 .upload-zone {
   flex-wrap: wrap;
 }
@@ -1141,15 +1105,7 @@ footer {
   right: 60px;
 }
 
-body {
-  background: 
-    linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.8)),
-    url('../../Imagenes/fondo1.jpg');
-
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
+/* Body background image removed — ruta incorrecta; se aplica solo en login.html mediante <style> en <head> */
 .nav-links a {
   font-family: 'Rajdhani', sans-serif;
   font-size: 0.9rem;
@@ -1229,72 +1185,9 @@ body {
 .nav-links a.active::after {
   width: 100%;
 }
-.reveal {
-  opacity: 0;
-  transform: translateY(40px);
-  transition: all 0.6s ease;
-}
-
-.reveal.active {
-  opacity: 1;
-  transform: translateY(0);
-}
-.week-body {
-  display: none;
-}
-
-.week-card.open .week-body,
-.week-card.active .week-body {
-  display: block;
-}
-.week-body {
-  max-height: 0 !important;
-  overflow: hidden !important;
-  padding: 0 !important;
-  transition: max-height 0.4s ease;
-}
-
-.week-card.open .week-body {
-  max-height: 900px !important;
-  padding: 2rem !important;
-}
-.week-card .week-body {
-  display: none !important;
-}
-
-.week-card.open .week-body {
-  display: block !important;
-}
-.page-nav {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  gap: 2rem;
-  margin-top: 3rem;
-}
-
-.page-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 40px;
-  width: 100%;
-}
-
-.page-nav a {
-  width: 330px;
-}
-.page-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 40px;
-  width: 100%;
-}
-
-.page-nav a {
-  width: 330px;
-}
+/* .reveal: see consolidated definition above (uses .visible class) */
+/* week-body rules consolidated above */
+/* page-nav consolidated */
 .link-upload{
   display:flex;
   gap:10px;
@@ -1319,7 +1212,4 @@ body {
   font-weight:bold;
   cursor:pointer;
 }
-.upload-btn,
-.link-upload {
-  display: none !important;
-}
+/* upload-btn / link-upload: visibility handled by JS controlarOpciones() */

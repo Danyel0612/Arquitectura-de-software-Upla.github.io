@@ -1,29 +1,9 @@
 const SUPABASE_URL = "https://cilnbzovlcarnjkiuylh.supabase.co";
 const SUPABASE_KEY = "sb_publishable_pizASaSdNvJwCiZxwCc9KA_PoYoB69a";
 const BUCKET = "pdfs";
-const ADMIN_EMAIL = "danyel061295@gmail.com";
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/* DESPLEGAR SEMANAS */
-document.querySelectorAll(".week-header").forEach(header => {
-  header.addEventListener("click", () => {
-    const card = header.closest(".week-card");
-    if (card) {
-      card.classList.toggle("open");
-    }
-  });
-});
-
-/* PROGRESO */
-const bar = document.querySelector(".progress-bar-fill");
-const text = document.querySelector(".progress-pct");
-if (bar && text) {
-  bar.style.width = "100%";
-  text.textContent = "100%";
-}
-
-/* RUTA DE UNIDAD */
 function obtenerUnidadActual() {
   const ruta = window.location.pathname;
   if (ruta.includes("unidad1")) return "unidad1";
@@ -33,103 +13,86 @@ function obtenerUnidadActual() {
   return "unidad1";
 }
 
-/* RUTA DE SEMANA */
 function obtenerSemana(card) {
-  const numero = card.querySelector(".week-number").textContent.trim();
-  return numero.toLowerCase().replace("s", "semana");
+  return card.querySelector(".week-number").textContent.trim().toLowerCase().replace("s", "semana");
 }
 
-/* CARGAR ARCHIVOS */
-async function cargarArchivos() {
-  const unidad = obtenerUnidadActual();
+function activarDespliegue() {
+  document.querySelectorAll(".week-header").forEach(header => {
+    header.onclick = () => {
+      const card = header.closest(".week-card");
+      if (card) card.classList.toggle("open");
+    };
+  });
+}
 
+async function cargarArchivos() {
   for (const card of document.querySelectorAll(".week-card")) {
     const fileList = card.querySelector(".file-list");
-    if (!fileList) continue;
-
     const uploadZone = card.querySelector(".upload-zone");
-    const semana = obtenerSemana(card);
-    const ruta = uploadZone?.dataset.path || `${unidad}/${semana}`;
+    if (!fileList || !uploadZone) continue;
 
+    const ruta = uploadZone.dataset.path;
     const { data, error } = await supabaseClient.storage.from(BUCKET).list(ruta);
 
     fileList.innerHTML = "";
 
-    if (error || !data) {
-      fileList.innerHTML = `<span style="color:#fca5a5;">Error al cargar archivos</span>`;
-      continue;
-    }
+    if (error || !data) continue;
 
-    const archivos = data.filter(file =>
-      file.name !== ".emptyFolderPlaceholder" && file.name.includes(".")
-    );
+    data.filter(f => f.name !== ".emptyFolderPlaceholder" && f.name.includes("."))
+      .forEach(file => {
+        const filePath = `${ruta}/${file.name}`;
+        const { data: publicData } = supabaseClient.storage.from(BUCKET).getPublicUrl(filePath);
 
-    if (archivos.length === 0) {
-      fileList.innerHTML = `<span style="color:#8ba4c0;">No hay archivos subidos.</span>`;
-      continue;
-    }
+        fileList.innerHTML += `
+          <div class="uploaded-file-item">
+            <span class="uploaded-file-name">📎 ${file.name}</span>
+            <a class="uploaded-file-link" href="${publicData.publicUrl}" target="_blank">VER</a>
+          </div>
+        `;
+      });
+  }
+}
 
-    archivos.forEach(file => {
-      const filePath = `${ruta}/${file.name}`;
-      const { data: publicData } = supabaseClient.storage
-        .from(BUCKET)
-        .getPublicUrl(filePath);
+async function cargarLinks() {
+  for (const zone of document.querySelectorAll(".upload-zone")) {
+    const ruta = zone.dataset.path;
+    const fileList = zone.querySelector(".file-list");
+    if (!ruta || !fileList) continue;
 
+    const { data, error } = await supabaseClient.from("links").select("*").eq("ruta", ruta);
+    if (error || !data) continue;
+
+    data.forEach(link => {
       fileList.innerHTML += `
         <div class="uploaded-file-item">
-          <span class="uploaded-file-name">📎 ${file.name}</span>
-          <a class="uploaded-file-link" href="${publicData.publicUrl}" target="_blank">VER</a>
+          <span class="uploaded-file-name">🔗 ${link.titulo}</span>
+          <a class="uploaded-file-link" href="${link.url}" target="_blank">ABRIR</a>
         </div>
       `;
     });
   }
 }
 
-/* MOSTRAR SUBIR PDF SOLO AL ADMIN */
-async function controlarBotonSubirPDF() {
+async function controlarOpciones() {
   const { data } = await supabaseClient.auth.getSession();
-  const user = data.user;
-
-  const uploadButtons = document.querySelectorAll(".upload-btn");
-  const linkButtons = document.querySelectorAll(".save-link-btn");
-  const linkInputs = document.querySelectorAll(".link-upload");
-
-if (!user) {
-
-  uploadButtons.forEach(btn => {
-    btn.style.display = "none";
-  });
-
-  linkButtons.forEach(btn => {
-    btn.style.display = "none";
-  });
-
-  linkInputs.forEach(input => {
-    input.style.display = "none";
-  });
-
-}
-  
+  const user = data.session?.user;
 
   document.querySelectorAll(".upload-btn").forEach(btn => {
-    if (user && user.email === ADMIN_EMAIL) {
-      btn.style.setProperty("display", "inline-block", "important");
-    } else {
-      btn.style.setProperty("display", "none", "important");
-    }
+    btn.style.setProperty("display", user ? "inline-block" : "none", "important");
+  });
+
+  document.querySelectorAll(".link-upload").forEach(box => {
+    box.style.setProperty("display", user ? "flex" : "none", "important");
   });
 }
 
-/* SUBIR ARCHIVOS */
-async function configurarSubidas() {
+function configurarSubidas() {
   document.querySelectorAll(".upload-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const session = await supabaseClient.auth.getSession();
+    btn.onclick = async () => {
+      const { data } = await supabaseClient.auth.getSession();
+      if (!data.session) return alert("Debes iniciar sesión");
 
-      if (!session.data.session) {
-        alert("Debes iniciar sesión");
-        return;
-      }
       const input = document.createElement("input");
       input.type = "file";
       input.accept = ".pdf,.png,.jpg,.jpeg,.doc,.docx";
@@ -138,225 +101,62 @@ async function configurarSubidas() {
         const file = input.files[0];
         if (!file) return;
 
-        const card = btn.closest(".week-card");
-        const uploadZone = card.querySelector(".upload-zone");
-        const unidad = obtenerUnidadActual();
-        const semana = obtenerSemana(card);
-        const rutaBase = uploadZone?.dataset.path || `${unidad}/${semana}`;
-
-        const nombreArchivo = `${Date.now()}-${file.name}`;
-        const ruta = `${rutaBase}/${nombreArchivo}`;
+        const zone = btn.closest(".upload-zone");
+        const ruta = `${zone.dataset.path}/${Date.now()}-${file.name}`;
 
         btn.textContent = "Subiendo...";
-
-        const { error } = await supabaseClient.storage
-          .from(BUCKET)
-          .upload(ruta, file);
-
+        const { error } = await supabaseClient.storage.from(BUCKET).upload(ruta, file);
         btn.textContent = "Subir PDF";
 
-        if (error) {
-          alert("Error al subir: " + error.message);
-          return;
-        }
+        if (error) return alert("Error: " + error.message);
 
         await cargarArchivos();
+        await cargarLinks();
       };
 
       input.click();
-    });
+    };
   });
 }
-/* GUARDAR LINKS */
-async function configurarLinks() {
 
-  const { data: { user } } = await supabaseClient.auth.getUser();
-
+function configurarLinks() {
   document.querySelectorAll(".save-link-btn").forEach(btn => {
+    btn.onclick = async () => {
+      const { data } = await supabaseClient.auth.getSession();
+      if (!data.session) return alert("Debes iniciar sesión");
 
-    if (!user) {
-      btn.style.display = "none";
-      return;
-    }
-
-    btn.addEventListener("click", async () => {
-
-      const card = btn.closest(".week-card");
-
-      const input = card.querySelector(".link-input");
-
+      const zone = btn.closest(".upload-zone");
+      const input = zone.querySelector(".link-input");
       const url = input.value.trim();
 
-      if (!url) {
-        alert("Ingresa un link");
-        return;
-      }
+      if (!url) return alert("Pega un link primero");
 
-      const unidad = obtenerUnidadActual();
-      const semana = obtenerSemana(card);
+      const { error } = await supabaseClient.from("links").insert([
+        {
+          ruta: zone.dataset.path,
+          titulo: "Link guardado",
+          url
+        }
+      ]);
 
-      const ruta = `${unidad}/${semana}`;
-
-      const { error } = await supabaseClient
-        .from("links")
-        .insert([
-          {
-            ruta,
-            titulo: "Link",
-            url
-          }
-        ]);
-
-      if (error) {
-        alert("Error guardando link");
-        console.log(error);
-        return;
-      }
-
-      alert("Link guardado correctamente");
+      if (error) return alert("Error al guardar link: " + error.message);
 
       input.value = "";
-
-      cargarLinks();
-    });
-
+      await cargarArchivos();
+      await cargarLinks();
+    };
   });
-
-}
-async function cargarLinks() {
-
-  const zonas = document.querySelectorAll(".upload-zone");
-
-  for (const zona of zonas) {
-
-    const ruta = zona.dataset.path;
-
-    const container = zona.querySelector(".links-container");
-
-    if (!container) continue;
-
-    const { data, error } = await supabaseClient
-      .from("links")
-      .select("*")
-      .eq("ruta", ruta);
-
-    if (error) continue;
-
-    container.innerHTML = "";
-
-    data.forEach(link => {
-
-      container.innerHTML += `
-        <a href="${link.url}" target="_blank" class="uploaded-link">
-          🔗 ${link.url}
-        </a>
-      `;
-
-    });
-
-  }
-
 }
 
-/* EJECUTAR */
 document.addEventListener("DOMContentLoaded", async () => {
+  activarDespliegue();
   await cargarArchivos();
-  await controlarBotonSubirPDF();
+  await cargarLinks();
+  await controlarOpciones();
   configurarSubidas();
+  configurarLinks();
 });
 
 supabaseClient.auth.onAuthStateChange(() => {
-  controlarBotonSubirPDF();
+  controlarOpciones();
 });
-document.querySelectorAll(".save-link-btn").forEach(btn => {
-
-  btn.addEventListener("click", async () => {
-
-    const uploadZone = btn.closest(".upload-zone");
-    const input = uploadZone.querySelector(".link-input");
-
-    const link = input.value.trim();
-
-    if (!link) {
-      alert("Ingresa un enlace");
-      return;
-    }
-
-    const fileList = uploadZone.querySelector(".file-list");
-
-    fileList.innerHTML += `
-      <div class="uploaded-file-item">
-        <span class="uploaded-file-name">🔗 Enlace guardado</span>
-        <a class="uploaded-file-link" href="${link}" target="_blank">
-          ABRIR
-        </a>
-      </div>
-    `;
-
-    input.value = "";
-  });
-
-});
-async function controlarOpcionesAdmin() {
-  const { data } = await supabaseClient.auth.getSession();
-  const user = data.session?.user;
-
-  document.querySelectorAll(".upload-btn").forEach(btn => {
-    btn.style.setProperty(
-      "display",
-      user ? "inline-block" : "none",
-      "important"
-    );
-  });
-
-  document.querySelectorAll(".link-upload").forEach(box => {
-    box.style.setProperty(
-      "display",
-      user ? "flex" : "none",
-      "important"
-    );
-  });
-}
-
-controlarOpcionesAdmin();
-
-supabaseClient.auth.onAuthStateChange(() => {
-  controlarOpcionesAdmin();
-});
-document.querySelectorAll(".save-link-btn").forEach(btn => {
-
-  btn.addEventListener("click", async () => {
-
-    const uploadZone = btn.closest(".upload-zone");
-    const input = uploadZone.querySelector(".link-input");
-
-    const link = input.value.trim();
-
-    if (!link) {
-      alert("Ingresa un enlace");
-      return;
-    }
-
-    const fileList = uploadZone.querySelector(".file-list");
-
-    fileList.innerHTML += `
-      <div class="uploaded-file-item">
-        <span class="uploaded-file-name">
-          🔗 ${link}
-        </span>
-
-        <a class="uploaded-file-link"
-           href="${link}"
-           target="_blank">
-           ABRIR
-        </a>
-      </div>
-    `;
-
-    input.value = "";
-
-  });
-
-});
-configurarLinks();
-cargarLinks();
