@@ -12,10 +12,43 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 function extraerEtiqueta(url) {
   try {
     const u = new URL(url);
-    // Usa el hostname sin "www." como etiqueta amigable
     return u.hostname.replace(/^www\./, "");
   } catch {
     return url.length > 40 ? url.slice(0, 40) + "…" : url;
+  }
+}
+
+/* ──────────────────────────────────────────
+   Navbar: mostrar estado de sesión
+────────────────────────────────────────── */
+
+async function actualizarNavbar() {
+  const { data } = await supabaseClient.auth.getSession();
+  const user = data.session?.user;
+
+  // Busca el botón de "Ingresar" en el navbar
+  const navBtn = document.querySelector(".navbar .nav-btn");
+  if (!navBtn) return;
+
+  if (user) {
+    // Cambia el botón a "Cerrar sesión"
+    navBtn.textContent = "Cerrar Sesión";
+    navBtn.href = "#";
+    navBtn.onclick = async (e) => {
+      e.preventDefault();
+      await supabaseClient.auth.signOut();
+      window.location.reload();
+    };
+    navBtn.style.background = "rgba(255,100,100,0.2)";
+    navBtn.style.borderColor = "rgba(255,100,100,0.4)";
+    navBtn.style.color = "#ff6b6b";
+  } else {
+    navBtn.textContent = "Ingresar";
+    navBtn.href = navBtn.href.includes("login") ? navBtn.href : "login.html";
+    navBtn.onclick = null;
+    navBtn.style.background = "";
+    navBtn.style.borderColor = "";
+    navBtn.style.color = "";
   }
 }
 
@@ -34,20 +67,21 @@ function activarDespliegue() {
 
 /* ──────────────────────────────────────────
    Carga de archivos desde Supabase Storage
+   (visible para TODOS los usuarios)
 ────────────────────────────────────────── */
 
 async function cargarArchivos() {
   for (const card of document.querySelectorAll(".week-card")) {
-    const fileList  = card.querySelector(".file-list");
+    const fileList   = card.querySelector(".file-list");
     const uploadZone = card.querySelector(".upload-zone");
     if (!fileList || !uploadZone) continue;
 
     const ruta = uploadZone.dataset.path;
-    const { data, error } = await supabaseClient.storage.from(BUCKET).list(ruta);
 
-    // Limpia solo los items de tipo archivo (no los de link)
+    // Limpia items de archivo previos (sin tocar los de link)
     card.querySelectorAll(".uploaded-file-item[data-tipo='archivo']").forEach(el => el.remove());
 
+    const { data, error } = await supabaseClient.storage.from(BUCKET).list(ruta);
     if (error || !data) continue;
 
     data
@@ -70,6 +104,7 @@ async function cargarArchivos() {
 
 /* ──────────────────────────────────────────
    Carga de links desde Supabase DB
+   (visible para TODOS los usuarios)
 ────────────────────────────────────────── */
 
 async function cargarLinks() {
@@ -78,14 +113,15 @@ async function cargarLinks() {
     const fileList = zone.querySelector(".file-list");
     if (!ruta || !fileList) continue;
 
+    // Limpia items de link previos
+    zone.querySelectorAll(".uploaded-file-item[data-tipo='link']").forEach(el => el.remove());
+
     const { data, error } = await supabaseClient
       .from("links")
       .select("*")
       .eq("ruta", ruta);
-    if (error || !data) continue;
 
-    // Limpia solo los items de tipo link antes de re-renderizar
-    zone.querySelectorAll(".uploaded-file-item[data-tipo='link']").forEach(el => el.remove());
+    if (error || !data) continue;
 
     data.forEach(link => {
       const etiqueta = link.titulo && link.titulo !== "Link guardado"
@@ -105,20 +141,26 @@ async function cargarLinks() {
 }
 
 /* ──────────────────────────────────────────
-   Control de visibilidad según sesión
+   Control de visibilidad de controles de
+   subida — SOLO visibles con sesión activa
 ────────────────────────────────────────── */
 
 async function controlarOpciones() {
   const { data } = await supabaseClient.auth.getSession();
-  const user = data.session?.user;
+  const loggedIn = !!data.session?.user;
 
+  // Botón "Subir PDF" → visible SOLO con sesión
   document.querySelectorAll(".upload-btn").forEach(btn => {
-    btn.style.setProperty("display", user ? "inline-block" : "none", "important");
+    btn.style.setProperty("display", loggedIn ? "inline-block" : "none", "important");
   });
 
+  // Sección de guardar link → visible SOLO con sesión
   document.querySelectorAll(".link-upload").forEach(box => {
-    box.style.setProperty("display", user ? "flex" : "none", "important");
+    box.style.setProperty("display", loggedIn ? "flex" : "none", "important");
   });
+
+  // Actualiza el navbar
+  await actualizarNavbar();
 }
 
 /* ──────────────────────────────────────────
@@ -129,7 +171,10 @@ function configurarSubidas() {
   document.querySelectorAll(".upload-btn").forEach(btn => {
     btn.onclick = async () => {
       const { data } = await supabaseClient.auth.getSession();
-      if (!data.session) return alert("Debes iniciar sesión");
+      if (!data.session) {
+        alert("Debes iniciar sesión para subir archivos.");
+        return;
+      }
 
       const input = document.createElement("input");
       input.type   = "file";
@@ -146,7 +191,10 @@ function configurarSubidas() {
         const { error } = await supabaseClient.storage.from(BUCKET).upload(ruta, file);
         btn.textContent = "Subir PDF";
 
-        if (error) return alert("Error: " + error.message);
+        if (error) {
+          alert("Error al subir: " + error.message);
+          return;
+        }
 
         await cargarArchivos();
         await cargarLinks();
@@ -165,31 +213,38 @@ function configurarLinks() {
   document.querySelectorAll(".save-link-btn").forEach(btn => {
     btn.onclick = async () => {
       const { data } = await supabaseClient.auth.getSession();
-      if (!data.session) return alert("Debes iniciar sesión");
+      if (!data.session) {
+        alert("Debes iniciar sesión para guardar links.");
+        return;
+      }
 
-      // El botón está dentro de .link-upload que está dentro de .upload-zone
       const zone  = btn.closest(".upload-zone");
       const input = zone.querySelector(".link-input");
       const url   = input.value.trim();
 
-      if (!url) return alert("Pega un link primero");
+      if (!url) {
+        alert("Pega un enlace primero.");
+        return;
+      }
 
-      // Valida que sea una URL válida
-      try { new URL(url); } catch { return alert("El enlace no es válido. Asegúrate de incluir https://"); }
+      // Valida URL
+      try { new URL(url); } catch {
+        alert("El enlace no es válido. Asegúrate de incluir https://");
+        return;
+      }
 
       const etiqueta = extraerEtiqueta(url);
 
       btn.textContent = "Guardando…";
       const { error } = await supabaseClient.from("links").insert([
-        {
-          ruta:   zone.dataset.path,
-          titulo: etiqueta,
-          url
-        }
+        { ruta: zone.dataset.path, titulo: etiqueta, url }
       ]);
       btn.textContent = "Guardar Link";
 
-      if (error) return alert("Error al guardar link: " + error.message);
+      if (error) {
+        alert("Error al guardar el link: " + error.message);
+        return;
+      }
 
       input.value = "";
       await cargarArchivos();
@@ -199,19 +254,27 @@ function configurarLinks() {
 }
 
 /* ──────────────────────────────────────────
-   Inicialización
+   Inicialización al cargar la página
 ────────────────────────────────────────── */
 
 document.addEventListener("DOMContentLoaded", async () => {
   activarDespliegue();
+
+  // Siempre carga archivos y links (para visitantes y usuarios)
   await cargarArchivos();
   await cargarLinks();
+
+  // Controla visibilidad de botones de subida según sesión
   await controlarOpciones();
+
+  // Configura eventos (solo actúan si hay sesión)
   configurarSubidas();
   configurarLinks();
 });
 
-// Reacciona a cambios de sesión (login / logout)
-supabaseClient.auth.onAuthStateChange(() => {
-  controlarOpciones();
+/* ──────────────────────────────────────────
+   Reacciona en tiempo real a login / logout
+────────────────────────────────────────── */
+supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+  await controlarOpciones();
 });
