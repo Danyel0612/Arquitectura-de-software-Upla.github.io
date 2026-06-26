@@ -771,7 +771,9 @@ body::before {
   margin-bottom: 2px;
 }
 
+/* ===== UPLOAD BUTTON (hidden by default — JS shows it on login) ===== */
 .upload-btn {
+  display: none;
   background: rgba(0,229,255,0.1);
   border: 1px solid rgba(0,229,255,0.3);
   color: var(--accent-cyan);
@@ -784,12 +786,12 @@ body::before {
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
+  margin-top: 10px;
 }
 .upload-btn:hover {
   background: rgba(0,229,255,0.2);
   box-shadow: var(--glow-cyan);
 }
-/* upload-btn visibility controlled by JS */
 
 /* ===== NAV BOTTOM ===== */
 .page-nav {
@@ -1188,28 +1190,49 @@ footer {
 /* .reveal: see consolidated definition above (uses .visible class) */
 /* week-body rules consolidated above */
 /* page-nav consolidated */
-.link-upload{
-  display:flex;
-  gap:10px;
-  margin-top:15px;
+/* ===== LINK UPLOAD (hidden by default — JS shows it on login) ===== */
+.link-upload {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  width: 100%;
 }
 
-.link-input{
-  flex:1;
-  padding:12px;
-  border-radius:10px;
-  border:none;
-  background:#0f223d;
-  color:white;
+.link-input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,229,255,0.25);
+  background: rgba(0,229,255,0.05);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.link-input:focus {
+  border-color: var(--accent-cyan);
+}
+.link-input::placeholder {
+  color: var(--text-muted);
 }
 
-.save-link-btn{
-  padding:12px 18px;
-  border:none;
-  border-radius:10px;
-  background:#00d9ff;
-  color:#001b2e;
-  font-weight:bold;
-  cursor:pointer;
+.save-link-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
 }
-/* upload-btn / link-upload: visibility handled by JS controlarOpciones() */
+.save-link-btn:hover {
+  opacity: 0.85;
+}
