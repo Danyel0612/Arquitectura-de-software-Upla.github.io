@@ -1,4 +1,4 @@
-const SUPABASE_URL = "https://cilnbzovlcarnjkiuylh.supabase.co";
+﻿const SUPABASE_URL = "https://cilnbzovlcarnjkiuylh.supabase.co";
 const SUPABASE_KEY = "sb_publishable_pizASaSdNvJwCiZxwCc9KA_PoYoB69a";
 const BUCKET      = "pdfs";
 
@@ -7,6 +7,7 @@ if (!window.supabase) {
   console.error("❌ Supabase SDK no cargó. Verifica el script en el HTML.");
 }
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: "upla-portafolio-v2-token", lock: (name, cb) => cb() } });
+const supabaseAnon = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
 
 /* ──────────────────────────────────────────
    Utilidades
@@ -28,11 +29,7 @@ async function actualizarNavbar() {
     navBtn.textContent = "Cerrar Sesión";
     navBtn.href = "#";
     navBtn.style.cssText = "background:rgba(255,100,100,0.2);border-color:rgba(255,100,100,0.4);color:#ff6b6b";
-    navBtn.onclick = async (e) => {
-      e.preventDefault();
-      await supabaseClient.auth.signOut();
-      window.location.reload();
-    };
+    navBtn.onclick = (e) => { e.preventDefault(); navBtn.textContent = "Saliendo..."; supabaseClient.auth.signOut().then(() => window.location.reload()).catch(() => { localStorage.removeItem("upla-portafolio-v2-token"); window.location.reload(); }); };
   } else {
     navBtn.textContent = "Ingresar";
     navBtn.style.cssText = "";
@@ -73,10 +70,7 @@ async function cargarContenidoDeZona(zone) {
 
   /* ── Archivos del Storage ── */
   try {
-    const { data: archivos, error } = await withTimeout(
-      supabaseClient.storage.from(BUCKET).list(ruta, { limit: 100 }),
-      30000
-    );
+    const { data: archivos, error } = await withTimeout( supabaseAnon.storage.from(BUCKET).list(ruta, { limit: 100 }), 30000 );
 
     if (error) {
       console.error("Storage error en", ruta, error);
@@ -102,10 +96,7 @@ async function cargarContenidoDeZona(zone) {
 
   /* ── Links de la DB ── */
   try {
-    const { data: links, error } = await withTimeout(
-      supabaseClient.from("links").select("id,titulo,url").eq("ruta", ruta),
-      30000
-    );
+    const { data: links, error } = await withTimeout( supabaseAnon.from("links").select("id,titulo,url").eq("ruta", ruta), 30000 );
 
     if (error) {
       console.error("DB error en", ruta, error);
@@ -158,7 +149,7 @@ async function controlarOpciones() {
     box.style.setProperty("display", loggedIn ? "flex" : "none", "important"));
 
   await actualizarNavbar();
-  if (loggedIn) { console.log('? Sesi�n iniciada correctamente, procediendo a mostrar botones...'); }
+  if (loggedIn) { console.log('? Sesi�n iniciada correctamente, procediendo a mostrar botones...'); }
 }
 
 /* ──────────────────────────────────────────
@@ -243,5 +234,6 @@ supabaseClient.auth.onAuthStateChange(async () => {
     await controlarOpciones();
   } catch (e) { console.error("Error authStateChange:", e); }
 });
+
 
 
