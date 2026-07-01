@@ -209,13 +209,26 @@ function configurarLinks() {
    Inicio
 ────────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", async () => {
-  activarDespliegue();
-  await cargarTodo();
-  await controlarOpciones();
-  configurarSubidas();
-  configurarLinks();
+  try {
+    activarDespliegue();
+  } catch (e) { console.error("Error activarDespliegue:", e); }
+
+  try {
+    await cargarTodo();
+  } catch (e) { console.error("Error cargarTodo:", e); }
+
+  try {
+    await controlarOpciones();
+  } catch (e) { console.error("Error controlarOpciones:", e); }
+
+  try {
+    configurarSubidas();
+    configurarLinks();
+  } catch (e) { console.error("Error configurando eventos:", e); }
 });
 
 supabaseClient.auth.onAuthStateChange(async () => {
-  await controlarOpciones();
+  try {
+    await controlarOpciones();
+  } catch (e) { console.error("Error authStateChange:", e); }
 });
