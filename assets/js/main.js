@@ -4,6 +4,64 @@ const BUCKET       = "pdfs";
 const SESSION_KEY  = "upla-session";   // clave en localStorage
 
 /* ─────────────────────────────────────────────────────────────
+   VISOR MODAL — abre PDF/imagen en la misma página
+───────────────────────────────────────────────────────────── */
+function crearModal() {
+  if (document.getElementById('upla-visor')) return;
+  const modal = document.createElement('div');
+  modal.id = 'upla-visor';
+  modal.innerHTML = `
+    <div id="upla-visor-overlay">
+      <div id="upla-visor-box">
+        <button id="upla-visor-close" title="Cerrar">✕</button>
+        <div id="upla-visor-content"></div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  // Cerrar al hacer click en el overlay o en el botón X
+  document.getElementById('upla-visor-close').onclick = cerrarVisor;
+  document.getElementById('upla-visor-overlay').onclick = (e) => {
+    if (e.target === document.getElementById('upla-visor-overlay')) cerrarVisor();
+  };
+  // Cerrar con ESC
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarVisor(); });
+}
+
+function abrirVisor(url, nombre) {
+  crearModal();
+  const content = document.getElementById('upla-visor-content');
+  const ext = nombre.split('.').pop().toLowerCase();
+  const esImagen = ['jpg','jpeg','png','gif','webp','svg','bmp'].includes(ext);
+  const esPDF    = ext === 'pdf';
+
+  if (esImagen) {
+    content.innerHTML = `<img src="${url}" alt="${nombre}" style="max-width:100%;max-height:80vh;border-radius:10px;display:block;margin:auto;">`;
+  } else if (esPDF) {
+    content.innerHTML = `<iframe src="${url}" style="width:100%;height:80vh;border:none;border-radius:10px;"></iframe>`;
+  } else {
+    // Otros formatos: ofrecer descarga
+    content.innerHTML = `
+      <div style="text-align:center;padding:3rem;">
+        <div style="font-size:4rem;margin-bottom:1rem;">📄</div>
+        <p style="margin-bottom:1.5rem;color:#8ba4c0;">${nombre}</p>
+        <a href="${url}" download="${nombre}" target="_blank"
+           style="padding:12px 28px;background:linear-gradient(135deg,#00e5ff,#7c3aed);color:#fff;border-radius:10px;text-decoration:none;font-weight:700;">⬇ Descargar</a>
+      </div>`;
+  }
+
+  document.getElementById('upla-visor-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarVisor() {
+  const overlay = document.getElementById('upla-visor-overlay');
+  if (overlay) overlay.style.display = 'none';
+  document.getElementById('upla-visor-content').innerHTML = '';
+  document.body.style.overflow = '';
+}
+
+/* ─────────────────────────────────────────────────────────────
    SESIÓN — leer / guardar / borrar sin pasar por el lock del SDK
 ───────────────────────────────────────────────────────────── */
 function leerSesion() {
@@ -146,7 +204,8 @@ async function cargarContenidoDeZona(zone) {
           div.className = "uploaded-file-item";
           div.innerHTML = `
             <span class="uploaded-file-name">📎 ${file.name}</span>
-            <a class="uploaded-file-link" href="${pub.publicUrl}" target="_blank">VER</a>`;
+            <button class="uploaded-file-link ver-btn" data-url="${pub.publicUrl}" data-nombre="${file.name}">VER</button>`;
+          div.querySelector('.ver-btn').onclick = () => abrirVisor(pub.publicUrl, file.name);
           fileList.appendChild(div);
           totalItems++;
         });
