@@ -6,7 +6,7 @@ const BUCKET      = "pdfs";
 if (!window.supabase) {
   console.error("❌ Supabase SDK no cargó. Verifica el script en el HTML.");
 }
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: "upla-portafolio-v2-token" } });
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: "upla-portafolio-v2-token", lock: (name, cb) => cb() } });
 
 /* ──────────────────────────────────────────
    Utilidades
@@ -242,3 +242,4 @@ supabaseClient.auth.onAuthStateChange(async () => {
     await controlarOpciones();
   } catch (e) { console.error("Error authStateChange:", e); }
 });
+
