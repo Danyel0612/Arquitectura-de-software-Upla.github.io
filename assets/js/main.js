@@ -75,7 +75,7 @@ async function cargarContenidoDeZona(zone) {
   try {
     const { data: archivos, error } = await withTimeout(
       supabaseClient.storage.from(BUCKET).list(ruta, { limit: 100 }),
-      5000
+      30000
     );
 
     if (error) {
@@ -104,7 +104,7 @@ async function cargarContenidoDeZona(zone) {
   try {
     const { data: links, error } = await withTimeout(
       supabaseClient.from("links").select("id,titulo,url").eq("ruta", ruta),
-      5000
+      30000
     );
 
     if (error) {
