@@ -740,12 +740,21 @@ body::before {
   border: 1px dashed rgba(0,229,255,0.25);
   border-radius: 12px;
   padding: 1.2rem 1.5rem;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
 }
 
+
+/* Fila superior: ícono + título + botón subir */
+.upload-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
 
 .upload-info {
   display: flex; align-items: center; gap: 10px;
@@ -906,17 +915,11 @@ footer {
   .page-nav { flex-direction: column; }
   .footer-inner { justify-content: center; text-align: center; flex-direction: column; }
 }
-/* ===== FILE LIST (consolidated) ===== */
-.upload-zone {
-  flex-wrap: wrap;
-}
-
 .file-list {
   width: 100%;
-  margin-top: 14px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .uploaded-file-item {
