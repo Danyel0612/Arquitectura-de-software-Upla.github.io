@@ -158,6 +158,7 @@ async function controlarOpciones() {
     box.style.setProperty("display", loggedIn ? "flex" : "none", "important"));
 
   await actualizarNavbar();
+  if (loggedIn) { console.log('? Sesi�n iniciada correctamente, procediendo a mostrar botones...'); }
 }
 
 /* ──────────────────────────────────────────
@@ -242,4 +243,5 @@ supabaseClient.auth.onAuthStateChange(async () => {
     await controlarOpciones();
   } catch (e) { console.error("Error authStateChange:", e); }
 });
+
 
