@@ -123,7 +123,7 @@
     const SUPABASE_URL = "https://cilnbzovlcarnjkiuylh.supabase.co";
     const SUPABASE_KEY = "sb_publishable_pizASaSdNvJwCiZxwCc9KA_PoYoB69a";
 
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: "upla-portafolio-v2-token" } });
 
     const estado = document.getElementById("estado");
 
