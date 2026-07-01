@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Diagnóstico Supabase</title>
+  <style>
+    body { font-family: monospace; background: #0a0a1a; color: #0f0; padding: 2rem; }
+    .ok  { color: #0f0; }
+    .err { color: #f55; }
+    .inf { color: #0af; }
+    pre  { background: #111; padding: 1rem; border-radius: 8px; overflow-x: auto; }
+    h2   { color: #0af; border-bottom: 1px solid #0af44; padding-bottom: .4rem; }
+  </style>
+</head>
+<body>
+<h1>🔎 Diagnóstico de Conexión Supabase</h1>
+<pre id="log">Iniciando diagnóstico...</pre>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<script>
+const log = document.getElementById("log");
+const SUPABASE_URL = "https://cilnbzovlcarnjkiuylh.supabase.co";
+const SUPABASE_KEY = "sb_publishable_pizASaSdNvJwCiZxwCc9KA_PoYoB69a";
+const BUCKET = "pdfs";
+
+function print(msg, cls="") {
+  const span = document.createElement("span");
+  span.className = cls;
+  span.textContent = msg + "\n";
+  log.appendChild(span);
+}
+
+async function diagnostico() {
+  log.textContent = "";
+  print("=== PASO 1: Inicializar cliente Supabase ===", "inf");
+  let client;
+  try {
+    client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    print("✅ Cliente creado correctamente", "ok");
+    print("   URL: " + SUPABASE_URL);
+    print("   KEY: " + SUPABASE_KEY.slice(0,20) + "...");
+  } catch(e) {
+    print("❌ ERROR al crear cliente: " + e.message, "err");
+    return;
+  }
+
+  print("\n=== PASO 2: Verificar sesión de usuario ===", "inf");
+  try {
+    const { data, error } = await client.auth.getSession();
+    if (error) print("⚠️  Error de sesión: " + error.message, "err");
+    else if (data.session) print("✅ Usuario logueado: " + data.session.user.email, "ok");
+    else print("ℹ️  Sin sesión activa (visitante)", "inf");
+  } catch(e) {
+    print("❌ ERROR de auth: " + e.message, "err");
+  }
+
+  print("\n=== PASO 3: Listar bucket 'pdfs' (raíz) ===", "inf");
+  try {
+    const { data, error } = await client.storage.from(BUCKET).list("", { limit: 10 });
+    if (error) {
+      print("❌ Error al listar bucket: " + JSON.stringify(error), "err");
+    } else {
+      print("✅ Bucket accesible. Carpetas encontradas: " + data.length, "ok");
+      data.forEach(f => print("   📁 " + f.name));
+    }
+  } catch(e) {
+    print("❌ Excepción: " + e.message, "err");
+  }
+
+  print("\n=== PASO 4: Listar archivos de unidad1/semana01 ===", "inf");
+  try {
+    const { data, error } = await client.storage.from(BUCKET).list("unidad1/semana01", { limit: 100 });
+    if (error) {
+      print("❌ Error: " + JSON.stringify(error), "err");
+    } else {
+      const files = data.filter(f => f.name !== ".emptyFolderPlaceholder" && f.name.includes("."));
+      print("✅ Archivos en semana01: " + files.length, "ok");
+      files.forEach(f => {
+        const { data: pub } = client.storage.from(BUCKET).getPublicUrl("unidad1/semana01/" + f.name);
+        print("   📎 " + f.name);
+        print("   🔗 " + pub.publicUrl, "inf");
+      });
+    }
+  } catch(e) {
+    print("❌ Excepción: " + e.message, "err");
+  }
+
+  print("\n=== PASO 5: Listar archivos de unidad1/semana02 ===", "inf");
+  try {
+    const { data, error } = await client.storage.from(BUCKET).list("unidad1/semana02", { limit: 100 });
+    if (error) {
+      print("❌ Error: " + JSON.stringify(error), "err");
+    } else {
+      const files = data.filter(f => f.name !== ".emptyFolderPlaceholder" && f.name.includes("."));
+      print("✅ Archivos en semana02: " + files.length, "ok");
+      files.forEach(f => print("   📎 " + f.name));
+    }
+  } catch(e) {
+    print("❌ Excepción: " + e.message, "err");
+  }
+
+  print("\n=== PASO 6: Leer tabla 'links' ===", "inf");
+  try {
+    const { data, error } = await client.from("links").select("*").limit(5);
+    if (error) {
+      print("❌ Error tabla links: " + JSON.stringify(error), "err");
+    } else {
+      print("✅ Links en DB: " + data.length, "ok");
+      data.forEach(l => print("   🔗 " + l.ruta + " → " + l.url));
+    }
+  } catch(e) {
+    print("❌ Excepción: " + e.message, "err");
+  }
+
+  print("\n=== FIN DEL DIAGNÓSTICO ===", "inf");
+  print("Si ves ✅ en todos los pasos, Supabase está bien conectado.", "ok");
+  print("Si ves ❌, copia el error y repórtalo.", "err");
+}
+
+diagnostico();
+</script>
+</body>
+</html>

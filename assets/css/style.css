@@ -922,6 +922,15 @@ footer {
   gap: 8px;
 }
 
+.file-loading,
+.file-empty {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: 8px 4px;
+  opacity: 0.7;
+}
+
 .uploaded-file-item {
   width: 100%;
   display: flex;
