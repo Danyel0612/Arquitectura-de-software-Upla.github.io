@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -56,7 +56,7 @@
           <p class="hero-quote">
                 La arquitectura sólida es el cimiento de sistemas escalables y eficientes.</p>
       <div class="hero-actions">
-        <a href="pages/unidad1.html" class="btn btn-primary">
+        <a href="#unidades" class="btn btn-primary" onclick="document.getElementById('unidades').scrollIntoView({behavior:'smooth'});return false;">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           Explorar Unidades
         </a>
@@ -86,9 +86,54 @@
   </section>
 
   <!-- Units -->
-        <div class="ui-line left"></div>
-        <div class="ui-line right"></div>
-  
+  <div class="ui-line left"></div>
+  <div class="ui-line right"></div>
+
+  <section id="unidades" class="courses-section" style="padding: 4rem 2rem;">
+    <div style="max-width:1100px;margin:0 auto;">
+      <h2 style="text-align:center;font-size:2rem;margin-bottom:2.5rem;background:linear-gradient(90deg,#00e5ff,#7f00ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Unidades del Curso</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.5rem;">
+
+        <a href="pages/unidad1.html" style="text-decoration:none;">
+          <div class="course-card" style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.2);border-radius:16px;padding:2rem 1.5rem;transition:transform .3s,box-shadow .3s;cursor:pointer;" onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 12px 35px rgba(0,229,255,0.2)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+            <div style="font-size:2.5rem;margin-bottom:1rem;">📐</div>
+            <h3 style="color:#00e5ff;margin:0 0 .5rem;">Unidad I</h3>
+            <p style="color:rgba(255,255,255,0.6);font-size:.9rem;margin:0;">Fundamentos de Arquitectura de Software</p>
+            <div style="margin-top:1.2rem;font-size:.8rem;color:#7f00ff;">Semanas 1 – 4 →</div>
+          </div>
+        </a>
+
+        <a href="pages/unidad2.html" style="text-decoration:none;">
+          <div class="course-card" style="background:rgba(127,0,255,0.05);border:1px solid rgba(127,0,255,0.2);border-radius:16px;padding:2rem 1.5rem;transition:transform .3s,box-shadow .3s;cursor:pointer;" onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 12px 35px rgba(127,0,255,0.2)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+            <div style="font-size:2.5rem;margin-bottom:1rem;">🏗️</div>
+            <h3 style="color:#a855f7;margin:0 0 .5rem;">Unidad II</h3>
+            <p style="color:rgba(255,255,255,0.6);font-size:.9rem;margin:0;">Patrones y Estilos Arquitectónicos</p>
+            <div style="margin-top:1.2rem;font-size:.8rem;color:#00e5ff;">Semanas 5 – 8 →</div>
+          </div>
+        </a>
+
+        <a href="pages/unidad3.html" style="text-decoration:none;">
+          <div class="course-card" style="background:rgba(0,255,170,0.05);border:1px solid rgba(0,255,170,0.2);border-radius:16px;padding:2rem 1.5rem;transition:transform .3s,box-shadow .3s;cursor:pointer;" onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 12px 35px rgba(0,255,170,0.2)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+            <div style="font-size:2.5rem;margin-bottom:1rem;">⚙️</div>
+            <h3 style="color:#00ffaa;margin:0 0 .5rem;">Unidad III</h3>
+            <p style="color:rgba(255,255,255,0.6);font-size:.9rem;margin:0;">Evaluación y Documentación de Arquitecturas</p>
+            <div style="margin-top:1.2rem;font-size:.8rem;color:#a855f7;">Semanas 9 – 12 →</div>
+          </div>
+        </a>
+
+        <a href="pages/unidad4.html" style="text-decoration:none;">
+          <div class="course-card" style="background:rgba(255,170,0,0.05);border:1px solid rgba(255,170,0,0.2);border-radius:16px;padding:2rem 1.5rem;transition:transform .3s,box-shadow .3s;cursor:pointer;" onmouseover="this.style.transform='translateY(-6px)';this.style.boxShadow='0 12px 35px rgba(255,170,0,0.2)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+            <div style="font-size:2.5rem;margin-bottom:1rem;">🚀</div>
+            <h3 style="color:#ffaa00;margin:0 0 .5rem;">Unidad IV</h3>
+            <p style="color:rgba(255,255,255,0.6);font-size:.9rem;margin:0;">Tendencias y Arquitecturas Modernas</p>
+            <div style="margin-top:1.2rem;font-size:.8rem;color:#00ffaa;">Semanas 13 – 16 →</div>
+          </div>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
 
   <!-- Footer -->
   <footer>
@@ -102,7 +147,7 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-<script src="assets/js/main.js?v=7"></script>      
+  <script src="assets/js/main.js?v=8"></script>
      
 </body>
 
