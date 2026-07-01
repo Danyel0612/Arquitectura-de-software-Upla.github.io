@@ -1,6 +1,6 @@
 const SUPABASE_URL = "https://cilnbzovlcarnjkiuylh.supabase.co";
 const SUPABASE_KEY = "sb_publishable_pizASaSdNvJwCiZxwCc9KA_PoYoB69a";
-const BUCKET = "pdfs";
+const BUCKET      = "pdfs";
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -8,215 +8,199 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
    Utilidades
 ────────────────────────────────────────── */
 
-/** Extrae el dominio de una URL para usar como etiqueta legible. */
 function extraerEtiqueta(url) {
   try {
-    const u = new URL(url);
-    return u.hostname.replace(/^www\./, "");
+    return new URL(url).hostname.replace(/^www\./, "");
   } catch {
-    return url.length > 40 ? url.slice(0, 40) + "…" : url;
+    return url.length > 50 ? url.slice(0, 50) + "…" : url;
   }
 }
 
 /* ──────────────────────────────────────────
-   Navbar: mostrar estado de sesión
+   Navbar — muestra estado de sesión
 ────────────────────────────────────────── */
 
 async function actualizarNavbar() {
   const { data } = await supabaseClient.auth.getSession();
-  const user = data.session?.user;
-
-  // Busca el botón de "Ingresar" en el navbar
-  const navBtn = document.querySelector(".navbar .nav-btn");
+  const user     = data.session?.user;
+  const navBtn   = document.querySelector(".navbar .nav-btn");
   if (!navBtn) return;
 
   if (user) {
-    // Cambia el botón a "Cerrar sesión"
-    navBtn.textContent = "Cerrar Sesión";
-    navBtn.href = "#";
+    navBtn.textContent    = "Cerrar Sesión";
+    navBtn.href           = "#";
+    navBtn.style.background  = "rgba(255,100,100,0.2)";
+    navBtn.style.borderColor = "rgba(255,100,100,0.4)";
+    navBtn.style.color       = "#ff6b6b";
     navBtn.onclick = async (e) => {
       e.preventDefault();
       await supabaseClient.auth.signOut();
       window.location.reload();
     };
-    navBtn.style.background = "rgba(255,100,100,0.2)";
-    navBtn.style.borderColor = "rgba(255,100,100,0.4)";
-    navBtn.style.color = "#ff6b6b";
   } else {
-    navBtn.textContent = "Ingresar";
-    navBtn.href = navBtn.href.includes("login") ? navBtn.href : "login.html";
-    navBtn.onclick = null;
-    navBtn.style.background = "";
+    navBtn.textContent    = "Ingresar";
+    navBtn.style.background  = "";
     navBtn.style.borderColor = "";
-    navBtn.style.color = "";
+    navBtn.style.color       = "";
+    navBtn.onclick = null;
   }
 }
 
 /* ──────────────────────────────────────────
-   Despliegue de semanas (acordeón)
+   Acordeón de semanas
 ────────────────────────────────────────── */
 
 function activarDespliegue() {
   document.querySelectorAll(".week-header").forEach(header => {
-    header.onclick = () => {
+    header.addEventListener("click", () => {
       const card = header.closest(".week-card");
       if (card) card.classList.toggle("open");
-    };
+    });
   });
 }
 
 /* ──────────────────────────────────────────
-   Carga de archivos desde Supabase Storage
-   (visible para TODOS los usuarios)
+   Carga archivos + links de una sola zona
+   y los renderiza en su file-list
 ────────────────────────────────────────── */
 
-async function cargarArchivos() {
-  for (const card of document.querySelectorAll(".week-card")) {
-    const fileList   = card.querySelector(".file-list");
-    const uploadZone = card.querySelector(".upload-zone");
-    if (!fileList || !uploadZone) continue;
+async function cargarContenidoDeZona(zone) {
+  const ruta     = zone.dataset.path;
+  const fileList = zone.querySelector(".file-list");
+  if (!ruta || !fileList) return;
 
-    const ruta = uploadZone.dataset.path;
+  // Vaciar el file-list completamente antes de repoblar
+  fileList.innerHTML = "";
 
-    // Limpia items de archivo previos (sin tocar los de link)
-    card.querySelectorAll(".uploaded-file-item[data-tipo='archivo']").forEach(el => el.remove());
+  // ── 1. Archivos desde Supabase Storage ──
+  try {
+    const { data: archivos, error: errStorage } =
+      await supabaseClient.storage.from(BUCKET).list(ruta, { limit: 100 });
 
-    // IMPORTANTE: Supabase Storage necesita la barra final para listar
-    // contenido de una carpeta ("unidad1/semana01/" no "unidad1/semana01")
-    const { data, error } = await supabaseClient.storage.from(BUCKET).list(ruta, {
-      limit: 100,
-      offset: 0
-    });
-    if (error || !data) continue;
+    if (!errStorage && Array.isArray(archivos)) {
+      archivos
+        .filter(f => f.name && f.name !== ".emptyFolderPlaceholder" && f.name.includes("."))
+        .forEach(file => {
+          const fullPath  = `${ruta}/${file.name}`;
+          const { data: pub } = supabaseClient.storage.from(BUCKET).getPublicUrl(fullPath);
 
-    data
-      .filter(f => f.name !== ".emptyFolderPlaceholder" && f.name.includes("."))
-      .forEach(file => {
-        const filePath = `${ruta}/${file.name}`;
-        const { data: publicData } = supabaseClient.storage.from(BUCKET).getPublicUrl(filePath);
-
-        const item = document.createElement("div");
-        item.className = "uploaded-file-item";
-        item.dataset.tipo = "archivo";
-        item.innerHTML = `
-          <span class="uploaded-file-name">📎 ${file.name}</span>
-          <a class="uploaded-file-link" href="${publicData.publicUrl}" target="_blank">VER</a>
-        `;
-        fileList.appendChild(item);
-      });
+          const div = document.createElement("div");
+          div.className        = "uploaded-file-item";
+          div.dataset.tipo     = "archivo";
+          div.innerHTML = `
+            <span class="uploaded-file-name">📎 ${file.name}</span>
+            <a class="uploaded-file-link" href="${pub.publicUrl}" target="_blank">VER</a>
+          `;
+          fileList.appendChild(div);
+        });
+    }
+  } catch (e) {
+    console.error("Error al cargar archivos de", ruta, e);
   }
-}
 
-/* ──────────────────────────────────────────
-   Carga de links desde Supabase DB
-   (visible para TODOS los usuarios)
-────────────────────────────────────────── */
-
-async function cargarLinks() {
-  for (const zone of document.querySelectorAll(".upload-zone")) {
-    const ruta     = zone.dataset.path;
-    const fileList = zone.querySelector(".file-list");
-    if (!ruta || !fileList) continue;
-
-    // Limpia items de link previos
-    zone.querySelectorAll(".uploaded-file-item[data-tipo='link']").forEach(el => el.remove());
-
-    const { data, error } = await supabaseClient
+  // ── 2. Links desde la tabla de base de datos ──
+  try {
+    const { data: links, error: errDB } = await supabaseClient
       .from("links")
-      .select("*")
+      .select("id, titulo, url")
       .eq("ruta", ruta);
 
-    if (error || !data) continue;
+    if (!errDB && Array.isArray(links)) {
+      links.forEach(link => {
+        const etiqueta = (link.titulo && link.titulo !== "Link guardado")
+          ? link.titulo
+          : extraerEtiqueta(link.url);
 
-    data.forEach(link => {
-      const etiqueta = link.titulo && link.titulo !== "Link guardado"
-        ? link.titulo
-        : extraerEtiqueta(link.url);
-
-      const item = document.createElement("div");
-      item.className = "uploaded-file-item";
-      item.dataset.tipo = "link";
-      item.innerHTML = `
-        <span class="uploaded-file-name">🔗 ${etiqueta}</span>
-        <a class="uploaded-file-link" href="${link.url}" target="_blank">ABRIR</a>
-      `;
-      fileList.appendChild(item);
-    });
+        const div = document.createElement("div");
+        div.className    = "uploaded-file-item";
+        div.dataset.tipo = "link";
+        div.innerHTML = `
+          <span class="uploaded-file-name">🔗 ${etiqueta}</span>
+          <a class="uploaded-file-link" href="${link.url}" target="_blank">ABRIR</a>
+        `;
+        fileList.appendChild(div);
+      });
+    }
+  } catch (e) {
+    console.error("Error al cargar links de", ruta, e);
   }
 }
 
 /* ──────────────────────────────────────────
-   Control de visibilidad de controles de
-   subida — SOLO visibles con sesión activa
+   Recarga TODAS las zonas de la página
+────────────────────────────────────────── */
+
+async function cargarTodo() {
+  const zonas = document.querySelectorAll(".upload-zone[data-path]");
+  // Las cargamos en paralelo para que sea más rápido
+  await Promise.all([...zonas].map(zone => cargarContenidoDeZona(zone)));
+}
+
+/* ──────────────────────────────────────────
+   Control de visibilidad (solo con sesión)
 ────────────────────────────────────────── */
 
 async function controlarOpciones() {
   const { data } = await supabaseClient.auth.getSession();
   const loggedIn = !!data.session?.user;
 
-  // Botón "Subir PDF" → visible SOLO con sesión
   document.querySelectorAll(".upload-btn").forEach(btn => {
     btn.style.setProperty("display", loggedIn ? "inline-block" : "none", "important");
   });
 
-  // Sección de guardar link → visible SOLO con sesión
   document.querySelectorAll(".link-upload").forEach(box => {
     box.style.setProperty("display", loggedIn ? "flex" : "none", "important");
   });
 
-  // Actualiza el navbar
   await actualizarNavbar();
 }
 
 /* ──────────────────────────────────────────
-   Configurar subida de archivos PDF
+   Subida de archivos
 ────────────────────────────────────────── */
 
 function configurarSubidas() {
   document.querySelectorAll(".upload-btn").forEach(btn => {
-    btn.onclick = async () => {
+    btn.addEventListener("click", async () => {
       const { data } = await supabaseClient.auth.getSession();
       if (!data.session) {
         alert("Debes iniciar sesión para subir archivos.");
         return;
       }
 
-      const input = document.createElement("input");
-      input.type   = "file";
-      input.accept = ".pdf,.png,.jpg,.jpeg,.doc,.docx";
-
+      const input    = document.createElement("input");
+      input.type     = "file";
+      input.accept   = ".pdf,.png,.jpg,.jpeg,.doc,.docx";
       input.onchange = async () => {
         const file = input.files[0];
         if (!file) return;
 
-        const zone = btn.closest(".upload-zone");
-        const ruta = `${zone.dataset.path}/${Date.now()}-${file.name}`;
+        const zone     = btn.closest(".upload-zone");
+        const filePath = `${zone.dataset.path}/${Date.now()}-${file.name}`;
 
         btn.textContent = "Subiendo…";
-        const { error } = await supabaseClient.storage.from(BUCKET).upload(ruta, file);
+        const { error } = await supabaseClient.storage.from(BUCKET).upload(filePath, file);
         btn.textContent = "Subir PDF";
 
         if (error) {
           alert("Error al subir: " + error.message);
           return;
         }
-
-        await cargarArchivos();
-        await cargarLinks();
+        // Recarga solo esta zona
+        await cargarContenidoDeZona(zone);
       };
-
       input.click();
-    };
+    });
   });
 }
 
 /* ──────────────────────────────────────────
-   Configurar guardado de links
+   Guardado de links
 ────────────────────────────────────────── */
 
 function configurarLinks() {
   document.querySelectorAll(".save-link-btn").forEach(btn => {
-    btn.onclick = async () => {
+    btn.addEventListener("click", async () => {
       const { data } = await supabaseClient.auth.getSession();
       if (!data.session) {
         alert("Debes iniciar sesión para guardar links.");
@@ -227,59 +211,43 @@ function configurarLinks() {
       const input = zone.querySelector(".link-input");
       const url   = input.value.trim();
 
-      if (!url) {
-        alert("Pega un enlace primero.");
-        return;
-      }
+      if (!url) { alert("Pega un enlace primero."); return; }
 
-      // Valida URL
       try { new URL(url); } catch {
-        alert("El enlace no es válido. Asegúrate de incluir https://");
+        alert("El enlace no es válido. Incluye https://");
         return;
       }
-
-      const etiqueta = extraerEtiqueta(url);
 
       btn.textContent = "Guardando…";
       const { error } = await supabaseClient.from("links").insert([
-        { ruta: zone.dataset.path, titulo: etiqueta, url }
+        { ruta: zone.dataset.path, titulo: extraerEtiqueta(url), url }
       ]);
       btn.textContent = "Guardar Link";
 
       if (error) {
-        alert("Error al guardar el link: " + error.message);
+        alert("Error al guardar: " + error.message);
         return;
       }
 
       input.value = "";
-      await cargarArchivos();
-      await cargarLinks();
-    };
+      await cargarContenidoDeZona(zone);
+    });
   });
 }
 
 /* ──────────────────────────────────────────
-   Inicialización al cargar la página
+   Inicialización
 ────────────────────────────────────────── */
 
 document.addEventListener("DOMContentLoaded", async () => {
   activarDespliegue();
-
-  // Siempre carga archivos y links (para visitantes y usuarios)
-  await cargarArchivos();
-  await cargarLinks();
-
-  // Controla visibilidad de botones de subida según sesión
-  await controlarOpciones();
-
-  // Configura eventos (solo actúan si hay sesión)
+  await cargarTodo();          // carga archivos + links en todas las zonas
+  await controlarOpciones();  // muestra/oculta botones según sesión
   configurarSubidas();
   configurarLinks();
 });
 
-/* ──────────────────────────────────────────
-   Reacciona en tiempo real a login / logout
-────────────────────────────────────────── */
-supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+// Reacciona a login / logout en tiempo real
+supabaseClient.auth.onAuthStateChange(async () => {
   await controlarOpciones();
 });
