@@ -1,45 +1,120 @@
-﻿const SUPABASE_URL = "https://cilnbzovlcarnjkiuylh.supabase.co";
+const SUPABASE_URL = "https://cilnbzovlcarnjkiuylh.supabase.co";
 const SUPABASE_KEY = "sb_publishable_pizASaSdNvJwCiZxwCc9KA_PoYoB69a";
-const BUCKET      = "pdfs";
+const BUCKET       = "pdfs";
+const SESSION_KEY  = "upla-session";   // clave en localStorage
 
-/* ── Inicializar cliente ── */
-if (!window.supabase) {
-  console.error("❌ Supabase SDK no cargó. Verifica el script en el HTML.");
+/* ─────────────────────────────────────────────────────────────
+   SESIÓN — leer / guardar / borrar sin pasar por el lock del SDK
+───────────────────────────────────────────────────────────── */
+function leerSesion() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    // Verificar que no haya expirado
+    if (s && s.expires_at && Date.now() / 1000 < s.expires_at) return s;
+    localStorage.removeItem(SESSION_KEY);
+    return null;
+  } catch { return null; }
 }
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: "upla-portafolio-v2-token", lock: (name, cb) => cb() } });
-const supabaseAnon = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
 
-/* ──────────────────────────────────────────
-   Utilidades
-────────────────────────────────────────── */
+function guardarSesion(session) {
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch {}
+}
+
+function borrarSesion() {
+  localStorage.removeItem(SESSION_KEY);
+  // Limpiar también cualquier clave residual de versiones anteriores
+  Object.keys(localStorage)
+    .filter(k => k.startsWith("sb-") || k.startsWith("upla-portafolio"))
+    .forEach(k => localStorage.removeItem(k));
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CLIENTE SUPABASE — solo para Storage/DB (sin auth lock)
+───────────────────────────────────────────────────────────── */
+if (!window.supabase) {
+  console.error("Supabase SDK no cargó.");
+}
+
+// Cliente anónimo para LEER archivos (nunca se traba)
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+});
+
+/* ─────────────────────────────────────────────────────────────
+   LOGIN / LOGOUT vía fetch directo (sin SDK de auth)
+───────────────────────────────────────────────────────────── */
+async function iniciarSesion(email, password) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method:  "POST",
+    headers: { "apikey": SUPABASE_KEY, "Content-Type": "application/json" },
+    body:    JSON.stringify({ email, password })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || data.msg || "Error al iniciar sesión");
+  guardarSesion(data);
+  return data;
+}
+
+async function cerrarSesion(accessToken) {
+  try {
+    await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+      method:  "POST",
+      headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${accessToken}` }
+    });
+  } catch {}
+  borrarSesion();
+}
+
+/* ─────────────────────────────────────────────────────────────
+   UTILIDADES
+───────────────────────────────────────────────────────────── */
 function extraerEtiqueta(url) {
   try { return new URL(url).hostname.replace(/^www\./, ""); }
   catch { return url.length > 50 ? url.slice(0, 50) + "…" : url; }
 }
 
-/* ──────────────────────────────────────────
-   Navbar — estado de sesión
-────────────────────────────────────────── */
-async function actualizarNavbar() {
-  const { data } = await supabaseClient.auth.getSession();
-  const user = data.session?.user;
+/* ─────────────────────────────────────────────────────────────
+   NAVBAR — mostrar "Cerrar Sesión" o "Ingresar"
+───────────────────────────────────────────────────────────── */
+function actualizarNavbar(session) {
   const navBtn = document.querySelector(".navbar .nav-btn");
   if (!navBtn) return;
-  if (user) {
+  if (session) {
     navBtn.textContent = "Cerrar Sesión";
     navBtn.href = "#";
-    navBtn.style.cssText = "background:rgba(255,100,100,0.2);border-color:rgba(255,100,100,0.4);color:#ff6b6b";
-    navBtn.onclick = (e) => { e.preventDefault(); navBtn.textContent = "Saliendo..."; supabaseClient.auth.signOut().then(() => window.location.reload()).catch(() => { localStorage.removeItem("upla-portafolio-v2-token"); window.location.reload(); }); };
+    navBtn.style.cssText =
+      "background:rgba(255,100,100,0.2);border-color:rgba(255,100,100,0.4);color:#ff6b6b";
+    navBtn.onclick = async (e) => {
+      e.preventDefault();
+      navBtn.textContent = "Saliendo…";
+      await cerrarSesion(session.access_token);
+      window.location.reload();
+    };
   } else {
     navBtn.textContent = "Ingresar";
     navBtn.style.cssText = "";
+    navBtn.href = (window.location.pathname.includes("/pages/")) ? "login.html" : "pages/login.html";
     navBtn.onclick = null;
   }
 }
 
-/* ──────────────────────────────────────────
-   Acordeón
-────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   CONTROLES — mostrar/ocultar botones según sesión
+───────────────────────────────────────────────────────────── */
+function controlarOpciones(session) {
+  const loggedIn = !!session;
+  document.querySelectorAll(".upload-btn").forEach(btn =>
+    btn.style.setProperty("display", loggedIn ? "inline-block" : "none", "important"));
+  document.querySelectorAll(".link-upload").forEach(box =>
+    box.style.setProperty("display", loggedIn ? "flex" : "none", "important"));
+  actualizarNavbar(session);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ACORDEÓN
+───────────────────────────────────────────────────────────── */
 function activarDespliegue() {
   document.querySelectorAll(".week-header").forEach(header => {
     header.addEventListener("click", () => {
@@ -48,41 +123,27 @@ function activarDespliegue() {
   });
 }
 
-/* ──────────────────────────────────────────
-   Carga de una zona: archivos + links
-────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   CARGA DE ARCHIVOS Y LINKS DE UNA ZONA
+───────────────────────────────────────────────────────────── */
 async function cargarContenidoDeZona(zone) {
   const ruta     = zone.dataset.path;
   const fileList = zone.querySelector(".file-list");
   if (!ruta || !fileList) return;
 
   fileList.innerHTML = `<div class="file-loading">⏳ Cargando archivos…</div>`;
-
   let totalItems = 0;
 
-  // Timeout helper
-  const withTimeout = (promise, ms) => {
-    return Promise.race([
-      promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), ms))
-    ]);
-  };
-
-  /* ── Archivos del Storage ── */
+  /* Archivos del Storage */
   try {
-    const { data: archivos, error } = await withTimeout( supabaseAnon.storage.from(BUCKET).list(ruta, { limit: 100 }), 30000 );
-
-    if (error) {
-      console.error("Storage error en", ruta, error);
-    } else if (Array.isArray(archivos)) {
+    const { data: archivos, error } = await db.storage.from(BUCKET).list(ruta, { limit: 100 });
+    if (!error && Array.isArray(archivos)) {
       archivos
         .filter(f => f.name && f.name !== ".emptyFolderPlaceholder" && f.name.includes("."))
         .forEach(file => {
-          const { data: pub } = supabaseClient.storage
-            .from(BUCKET).getPublicUrl(`${ruta}/${file.name}`);
+          const { data: pub } = db.storage.from(BUCKET).getPublicUrl(`${ruta}/${file.name}`);
           const div = document.createElement("div");
           div.className = "uploaded-file-item";
-          div.dataset.tipo = "archivo";
           div.innerHTML = `
             <span class="uploaded-file-name">📎 ${file.name}</span>
             <a class="uploaded-file-link" href="${pub.publicUrl}" target="_blank">VER</a>`;
@@ -90,23 +151,18 @@ async function cargarContenidoDeZona(zone) {
           totalItems++;
         });
     }
-  } catch (e) {
-    console.error("Excepción cargando archivos de", ruta, e.message);
-  }
+    if (error) console.error("Storage error:", ruta, error.message);
+  } catch (e) { console.error("Storage excepción:", ruta, e.message); }
 
-  /* ── Links de la DB ── */
+  /* Links de la DB */
   try {
-    const { data: links, error } = await withTimeout( supabaseAnon.from("links").select("id,titulo,url").eq("ruta", ruta), 30000 );
-
-    if (error) {
-      console.error("DB error en", ruta, error);
-    } else if (Array.isArray(links)) {
+    const { data: links, error } = await db.from("links").select("id,titulo,url").eq("ruta", ruta);
+    if (!error && Array.isArray(links)) {
       links.forEach(link => {
         const etiqueta = (link.titulo && link.titulo !== "Link guardado")
           ? link.titulo : extraerEtiqueta(link.url);
         const div = document.createElement("div");
         div.className = "uploaded-file-item";
-        div.dataset.tipo = "link";
         div.innerHTML = `
           <span class="uploaded-file-name">🔗 ${etiqueta}</span>
           <a class="uploaded-file-link" href="${link.url}" target="_blank">ABRIR</a>`;
@@ -114,52 +170,29 @@ async function cargarContenidoDeZona(zone) {
         totalItems++;
       });
     }
-  } catch (e) {
-    console.error("Excepción cargando links de", ruta, e.message);
-  }
+    if (error) console.error("DB error:", ruta, error.message);
+  } catch (e) { console.error("DB excepción:", ruta, e.message); }
 
-  /* Quitar el indicador de carga */
   const loading = fileList.querySelector(".file-loading");
   if (loading) loading.remove();
-
   if (totalItems === 0) {
     fileList.innerHTML = `<div class="file-empty">Sin archivos subidos aún</div>`;
   }
 }
 
-/* ──────────────────────────────────────────
-   Carga todas las zonas en paralelo
-────────────────────────────────────────── */
 async function cargarTodo() {
   const zonas = [...document.querySelectorAll(".upload-zone[data-path]")];
   await Promise.all(zonas.map(z => cargarContenidoDeZona(z)));
 }
 
-/* ──────────────────────────────────────────
-   Visibilidad de controles (solo con sesión)
-────────────────────────────────────────── */
-async function controlarOpciones() {
-  const { data } = await supabaseClient.auth.getSession();
-  const loggedIn = !!data.session?.user;
-
-  document.querySelectorAll(".upload-btn").forEach(btn =>
-    btn.style.setProperty("display", loggedIn ? "inline-block" : "none", "important"));
-
-  document.querySelectorAll(".link-upload").forEach(box =>
-    box.style.setProperty("display", loggedIn ? "flex" : "none", "important"));
-
-  await actualizarNavbar();
-  if (loggedIn) { console.log('? Sesi�n iniciada correctamente, procediendo a mostrar botones...'); }
-}
-
-/* ──────────────────────────────────────────
-   Subida de archivos
-────────────────────────────────────────── */
-function configurarSubidas() {
+/* ─────────────────────────────────────────────────────────────
+   SUBIDA DE ARCHIVOS
+───────────────────────────────────────────────────────────── */
+function configurarSubidas(session) {
   document.querySelectorAll(".upload-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
-      const { data } = await supabaseClient.auth.getSession();
-      if (!data.session) { alert("Debes iniciar sesión."); return; }
+      const s = leerSesion();
+      if (!s) { alert("Debes iniciar sesión."); return; }
 
       const input = Object.assign(document.createElement("input"),
         { type: "file", accept: ".pdf,.png,.jpg,.jpeg,.doc,.docx" });
@@ -170,9 +203,15 @@ function configurarSubidas() {
         const zone = btn.closest(".upload-zone");
         const path = `${zone.dataset.path}/${Date.now()}-${file.name}`;
         btn.textContent = "Subiendo…";
-        const { error } = await supabaseClient.storage.from(BUCKET).upload(path, file);
+
+        // Subir con el token de sesión del usuario
+        const uploadClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+          global: { headers: { Authorization: `Bearer ${s.access_token}` } }
+        });
+        const { error } = await uploadClient.storage.from(BUCKET).upload(path, file);
         btn.textContent = "Subir PDF";
-        if (error) { alert("Error: " + error.message); return; }
+        if (error) { alert("Error subiendo: " + error.message); return; }
         await cargarContenidoDeZona(zone);
       };
       input.click();
@@ -180,14 +219,14 @@ function configurarSubidas() {
   });
 }
 
-/* ──────────────────────────────────────────
-   Guardado de links
-────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   GUARDADO DE LINKS
+───────────────────────────────────────────────────────────── */
 function configurarLinks() {
   document.querySelectorAll(".save-link-btn").forEach(btn => {
     btn.addEventListener("click", async () => {
-      const { data } = await supabaseClient.auth.getSession();
-      if (!data.session) { alert("Debes iniciar sesión."); return; }
+      const s = leerSesion();
+      if (!s) { alert("Debes iniciar sesión."); return; }
 
       const zone  = btn.closest(".upload-zone");
       const input = zone.querySelector(".link-input");
@@ -196,44 +235,30 @@ function configurarLinks() {
       try { new URL(url); } catch { alert("URL inválida. Incluye https://"); return; }
 
       btn.textContent = "Guardando…";
-      const { error } = await supabaseClient.from("links").insert([
+      const linkClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        global: { headers: { Authorization: `Bearer ${s.access_token}` } }
+      });
+      const { error } = await linkClient.from("links").insert([
         { ruta: zone.dataset.path, titulo: extraerEtiqueta(url), url }
       ]);
       btn.textContent = "Guardar Link";
-      if (error) { alert("Error: " + error.message); return; }
+      if (error) { alert("Error guardando link: " + error.message); return; }
       input.value = "";
       await cargarContenidoDeZona(zone);
     });
   });
 }
 
-/* ──────────────────────────────────────────
-   Inicio
-────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   INICIO
+───────────────────────────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    activarDespliegue();
-  } catch (e) { console.error("Error activarDespliegue:", e); }
+  const session = leerSesion();
 
-  try {
-    await cargarTodo();
-  } catch (e) { console.error("Error cargarTodo:", e); }
-
-  try {
-    await controlarOpciones();
-  } catch (e) { console.error("Error controlarOpciones:", e); }
-
-  try {
-    configurarSubidas();
-    configurarLinks();
-  } catch (e) { console.error("Error configurando eventos:", e); }
+  activarDespliegue();
+  controlarOpciones(session);   // Instantáneo — no espera red
+  cargarTodo();                  // Paralelo — no bloquea la UI
+  configurarSubidas(session);
+  configurarLinks();
 });
-
-supabaseClient.auth.onAuthStateChange(async () => {
-  try {
-    await controlarOpciones();
-  } catch (e) { console.error("Error authStateChange:", e); }
-});
-
-
-

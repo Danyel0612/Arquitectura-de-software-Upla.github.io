@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - UPLA</title>
-  <link rel="stylesheet" href="../assets/css/style.css?v=6">
+  <link rel="stylesheet" href="../assets/css/style.css?v=7">
   <style>
     body {
       margin: 0;
@@ -117,18 +117,26 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-
   <script>
     const SUPABASE_URL = "https://cilnbzovlcarnjkiuylh.supabase.co";
     const SUPABASE_KEY = "sb_publishable_pizASaSdNvJwCiZxwCc9KA_PoYoB69a";
-
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: "upla-portafolio-v2-token", lock: (name, cb) => cb() } });
+    const SESSION_KEY  = "upla-session";
 
     const estado = document.getElementById("estado");
 
+    // Si ya hay sesión activa, redirigir directamente
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s && s.expires_at && Date.now() / 1000 < s.expires_at) {
+          window.location.href = "../index.html";
+        }
+      }
+    } catch {}
+
     document.getElementById("btnLogin").addEventListener("click", async () => {
-      const email = document.getElementById("usuario").value.trim();
+      const email    = document.getElementById("usuario").value.trim();
       const password = document.getElementById("password").value;
 
       if (!email || !password) {
@@ -136,28 +144,40 @@
         return;
       }
 
-      estado.textContent = "Iniciando sesión...";
+      estado.style.color = "#fca5a5";
+      estado.textContent = "Iniciando sesión…";
 
-      const { error } = await supabaseClient.auth.signInWithPassword({
-        email,
-        password
-      });
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
+          {
+            method:  "POST",
+            headers: { "apikey": SUPABASE_KEY, "Content-Type": "application/json" },
+            body:    JSON.stringify({ email, password })
+          }
+        );
+        const data = await res.json();
 
-      if (error) {
-        estado.textContent = "Error: " + error.message;
-        return;
+        if (!res.ok) {
+          estado.textContent = "Error: " + (data.error_description || data.msg || "Credenciales incorrectas");
+          return;
+        }
+
+        // Guardar sesión en localStorage con la misma clave que main.js
+        localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+
+        estado.style.color = "#86efac";
+        estado.textContent = "¡Login correcto! Redirigiendo…";
+
+        setTimeout(() => { window.location.href = "../index.html"; }, 600);
+
+      } catch (err) {
+        estado.textContent = "Error de red: " + err.message;
       }
-
-      estado.style.color = "#86efac";
-      estado.textContent = "Login correcto. Redirigiendo...";
-
-      setTimeout(() => {
-        window.location.href = "../index.html";
-      }, 800);
     });
 
     document.getElementById("btnRegister").addEventListener("click", async () => {
-      const email = document.getElementById("usuario").value.trim();
+      const email    = document.getElementById("usuario").value.trim();
       const password = document.getElementById("password").value;
 
       if (!email || !password) {
@@ -165,23 +185,32 @@
         return;
       }
 
-      estado.textContent = "Creando cuenta...";
+      estado.style.color = "#fca5a5";
+      estado.textContent = "Creando cuenta…";
 
-      const { error } = await supabaseClient.auth.signUp({
-        email,
-        password
-      });
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/auth/v1/signup`,
+          {
+            method:  "POST",
+            headers: { "apikey": SUPABASE_KEY, "Content-Type": "application/json" },
+            body:    JSON.stringify({ email, password })
+          }
+        );
+        const data = await res.json();
 
-      if (error) {
-        estado.textContent = "Error: " + error.message;
-        return;
+        if (!res.ok) {
+          estado.textContent = "Error: " + (data.error_description || data.msg || "Error al crear cuenta");
+          return;
+        }
+
+        estado.style.color = "#86efac";
+        estado.textContent = "Cuenta creada. Revisa tu correo y luego inicia sesión.";
+
+      } catch (err) {
+        estado.textContent = "Error de red: " + err.message;
       }
-
-      estado.style.color = "#86efac";
-      estado.textContent = "Cuenta creada. Ahora inicia sesión.";
     });
   </script>
 </body>
 </html>
-
-
