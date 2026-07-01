@@ -81,7 +81,12 @@ async function cargarArchivos() {
     // Limpia items de archivo previos (sin tocar los de link)
     card.querySelectorAll(".uploaded-file-item[data-tipo='archivo']").forEach(el => el.remove());
 
-    const { data, error } = await supabaseClient.storage.from(BUCKET).list(ruta);
+    // IMPORTANTE: Supabase Storage necesita la barra final para listar
+    // contenido de una carpeta ("unidad1/semana01/" no "unidad1/semana01")
+    const { data, error } = await supabaseClient.storage.from(BUCKET).list(ruta, {
+      limit: 100,
+      offset: 0
+    });
     if (error || !data) continue;
 
     data
