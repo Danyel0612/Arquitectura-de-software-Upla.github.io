@@ -59,15 +59,24 @@ async function cargarContenidoDeZona(zone) {
   const fileList = zone.querySelector(".file-list");
   if (!ruta || !fileList) return;
 
-  /* Indicador de carga */
   fileList.innerHTML = `<div class="file-loading">⏳ Cargando archivos…</div>`;
 
   let totalItems = 0;
 
+  // Timeout helper
+  const withTimeout = (promise, ms) => {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), ms))
+    ]);
+  };
+
   /* ── Archivos del Storage ── */
   try {
-    const { data: archivos, error } = await supabaseClient
-      .storage.from(BUCKET).list(ruta, { limit: 100 });
+    const { data: archivos, error } = await withTimeout(
+      supabaseClient.storage.from(BUCKET).list(ruta, { limit: 100 }),
+      5000
+    );
 
     if (error) {
       console.error("Storage error en", ruta, error);
@@ -88,13 +97,15 @@ async function cargarContenidoDeZona(zone) {
         });
     }
   } catch (e) {
-    console.error("Excepción cargando archivos de", ruta, e);
+    console.error("Excepción cargando archivos de", ruta, e.message);
   }
 
   /* ── Links de la DB ── */
   try {
-    const { data: links, error } = await supabaseClient
-      .from("links").select("id,titulo,url").eq("ruta", ruta);
+    const { data: links, error } = await withTimeout(
+      supabaseClient.from("links").select("id,titulo,url").eq("ruta", ruta),
+      5000
+    );
 
     if (error) {
       console.error("DB error en", ruta, error);
@@ -113,14 +124,13 @@ async function cargarContenidoDeZona(zone) {
       });
     }
   } catch (e) {
-    console.error("Excepción cargando links de", ruta, e);
+    console.error("Excepción cargando links de", ruta, e.message);
   }
 
   /* Quitar el indicador de carga */
   const loading = fileList.querySelector(".file-loading");
   if (loading) loading.remove();
 
-  /* Mensaje si no hay nada */
   if (totalItems === 0) {
     fileList.innerHTML = `<div class="file-empty">Sin archivos subidos aún</div>`;
   }
