@@ -191,6 +191,7 @@ async function cargarContenidoDeZona(zone) {
 
   fileList.innerHTML = `<div class="file-loading">⏳ Cargando archivos…</div>`;
   let totalItems = 0;
+  const s = leerSesion();
 
   /* Archivos del Storage */
   try {
@@ -202,10 +203,28 @@ async function cargarContenidoDeZona(zone) {
           const { data: pub } = db.storage.from(BUCKET).getPublicUrl(`${ruta}/${file.name}`);
           const div = document.createElement("div");
           div.className = "uploaded-file-item";
+          const deleteHTML = s ? `<button class="uploaded-file-link delete-btn" title="Eliminar archivo" style="color:#ff6b6b;background:none;border:none;cursor:pointer;">🗑️</button>` : '';
           div.innerHTML = `
             <span class="uploaded-file-name">📎 ${file.name}</span>
-            <button class="uploaded-file-link ver-btn" data-url="${pub.publicUrl}" data-nombre="${file.name}">VER</button>`;
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button class="uploaded-file-link ver-btn" data-url="${pub.publicUrl}" data-nombre="${file.name}">VER</button>
+              ${deleteHTML}
+            </div>`;
           div.querySelector('.ver-btn').onclick = () => abrirVisor(pub.publicUrl, file.name);
+          if (s) {
+            div.querySelector('.delete-btn').onclick = async () => {
+              if (!confirm(`¿Eliminar archivo ${file.name}?`)) return;
+              const btn = div.querySelector('.delete-btn');
+              btn.textContent = "⏳";
+              const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+                global: { headers: { Authorization: `Bearer ${s.access_token}` } }
+              });
+              const { error } = await client.storage.from(BUCKET).remove([`${ruta}/${file.name}`]);
+              if (error) { alert("Error eliminando: " + error.message); btn.textContent = "🗑️"; }
+              else cargarContenidoDeZona(zone);
+            };
+          }
           fileList.appendChild(div);
           totalItems++;
         });
@@ -222,9 +241,27 @@ async function cargarContenidoDeZona(zone) {
           ? link.titulo : extraerEtiqueta(link.url);
         const div = document.createElement("div");
         div.className = "uploaded-file-item";
+        const deleteHTML = s ? `<button class="uploaded-file-link delete-btn-link" title="Eliminar enlace" style="color:#ff6b6b;background:none;border:none;cursor:pointer;">🗑️</button>` : '';
         div.innerHTML = `
           <span class="uploaded-file-name">🔗 ${etiqueta}</span>
-          <a class="uploaded-file-link" href="${link.url}" target="_blank">ABRIR</a>`;
+          <div style="display:flex;gap:8px;align-items:center;">
+            <a class="uploaded-file-link" href="${link.url}" target="_blank">ABRIR</a>
+            ${deleteHTML}
+          </div>`;
+        if (s) {
+          div.querySelector('.delete-btn-link').onclick = async () => {
+            if (!confirm(`¿Eliminar enlace ${etiqueta}?`)) return;
+            const btn = div.querySelector('.delete-btn-link');
+            btn.textContent = "⏳";
+            const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+              auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+              global: { headers: { Authorization: `Bearer ${s.access_token}` } }
+            });
+            const { error } = await client.from("links").delete().eq("id", link.id);
+            if (error) { alert("Error eliminando: " + error.message); btn.textContent = "🗑️"; }
+            else cargarContenidoDeZona(zone);
+          };
+        }
         fileList.appendChild(div);
         totalItems++;
       });
